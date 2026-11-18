@@ -113,6 +113,63 @@ details.sec .body{padding:12px 14px 14px}
 .modal .sheet{background:var(--card);width:100%;max-width:620px;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto}
 .modal h3{font-size:19px;margin-bottom:10px}
 .ctime{font-variant-numeric:tabular-nums}
+
+.timerbar{display:flex;align-items:center;gap:10px;background:var(--fox);color:#fff;border-radius:14px;padding:10px 14px;margin-bottom:12px;font-weight:600}
+.timerbar span{flex:1}.timerbar b{font-variant-numeric:tabular-nums;font-size:18px}
+.timerbar button{border:0;background:#fff;color:var(--fox);border-radius:10px;padding:7px 12px;font-weight:700}
+.clock{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;text-align:center;margin:4px 0}
+.chg input{border-color:var(--fox)!important;background:rgba(242,140,40,.08)}
+.was{font-size:12px;color:var(--fox);margin:-6px 2px 9px;font-weight:600}
+.ver{padding:10px 0;border-bottom:1px solid var(--chip)}
+.ver:last-child{border:0}
+.ver b{font-size:14px}.ver div{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.45}
+.ver button{margin-top:6px;border:0;background:var(--chip);color:var(--text);border-radius:10px;padding:6px 10px;font-size:13px}
+.bar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:13px}
+.bar .l{width:38%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .b{flex:1;height:18px;background:var(--chip);border-radius:6px;overflow:hidden}
+.bar .b i{display:block;height:100%;background:var(--fox);border-radius:6px}
+.bar .v{width:64px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.cols{display:flex;align-items:flex-end;gap:3px;height:120px;margin:8px 0 2px}
+.cols div{flex:1;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.cols div.z{background:var(--chip)}
+.colsx{display:flex;gap:3px;font-size:10px;color:var(--muted)}
+.colsx span{flex:1;text-align:center}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:11px 2px;border-bottom:1px solid var(--chip);cursor:pointer}
+.chk:last-child{border:0}
+.chk .box{width:26px;height:26px;border-radius:8px;border:2px solid var(--muted);flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+.chk.done .box{background:var(--green);border-color:var(--green)}
+.chk.done .tx{text-decoration:line-through;color:var(--muted)}
+.chk .tx{flex:1;font-size:15px;line-height:1.35}
+.chk .ed{display:flex;gap:4px}
+.chk .ed button{border:0;background:var(--chip);color:var(--text);border-radius:8px;width:32px;height:30px}
+.prog{height:10px;background:var(--chip);border-radius:6px;overflow:hidden;margin:8px 0 4px}
+.prog i{display:block;height:100%;background:var(--green)}
+.fe{background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:8px;border-left:6px solid var(--bad);cursor:pointer}
+.fe b{display:block;font-size:16px}
+.fe small{display:block;color:var(--muted);font-size:13px;margin-top:3px}
+.fe .lo{font-size:14px;margin-top:6px;line-height:1.4}
+.ocr{position:fixed;inset:0;z-index:60;background:#05070f;color:#fff;display:flex;flex-direction:column}
+.ocr .top{padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:#111a30}
+.ocr .top small{opacity:.7;font-size:12px}
+.ocr .top h3{font-size:19px;margin:2px 0 6px}
+.ocr .top .vals{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.ocr .top .vals span{flex:none;background:#24304f;border-radius:9px;padding:4px 8px;font-size:12px;white-space:nowrap}
+.ocr .top .vals span.cur{background:var(--fox)}
+.ocr .top .vals span.ok{background:#1f6b42}
+.ocr .pic{flex:1;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
+.ocr .pic .inner{position:relative;width:100%}
+.ocr .pic img{width:100%;display:block}
+.ocr .hit{position:absolute;border:2px solid #36d07c;background:rgba(54,208,124,.18);border-radius:5px;padding:0}
+.ocr .hit.used{border-color:var(--fox);background:rgba(242,140,40,.3)}
+.ocr .bot{display:flex;gap:6px;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));background:#111a30}
+.ocr .bot button{flex:1;border:0;border-radius:12px;padding:12px 4px;font-size:14px;font-weight:600;background:#24304f;color:#fff}
+.ocr .bot button.go{background:var(--accent)}
+.ocrbtns{display:flex;gap:8px;margin:0 0 10px}
+.ocrbtns label{flex:1;text-align:center;margin:0}
+.qrbox{background:#fff;border-radius:14px;padding:14px;text-align:center;color:#000}
+.qrbox svg{width:220px;height:220px}
+.spin{display:inline-block;width:22px;height:22px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -121,518 +178,21 @@ details.sec .body{padding:12px 14px 14px}
     <svg class="fx" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 6 L15 15 L25 15 L34 6 L33 22 Q30 33 20 35 Q10 33 7 22 Z" fill="#f28c28"/><path d="M12 22 Q20 33 28 22 Q24 29 20 29 Q16 29 12 22 Z" fill="#fff4e8"/><rect x="7" y="17" width="26" height="2" rx="1" fill="#5a3416"/><circle cx="15" cy="19" r="3.4" fill="#5a3416"/><circle cx="25" cy="19" r="3.4" fill="#5a3416"/><circle cx="15" cy="19" r="2.4" fill="#9fdcff"/><circle cx="25" cy="19" r="2.4" fill="#9fdcff"/><circle cx="20" cy="28" r="1.6" fill="#2a1640"/></svg>
     <b>Fox Stanze<small>Göpfert Flachbettstanze · Rüsten &amp; Schicht</small></b>
     <button class="ib" id="btnTheme" title="Hell/Dunkel">🌙</button>
-    <button class="ib" id="btnMenu" title="Sichern">⋯</button>
+    <button class="ib" id="btnMenu" title="Sichern &amp; Export">⋯</button>
   </div>
+  <div id="timerbar"></div>
   <main id="view"></main>
 </div>
-
 <nav class="tabs">
   <button data-tab="ruesten" class="on"><i>🧰</i>Rüsten</button>
   <button data-tab="schicht"><i>📋</i>Schicht</button>
   <button data-tab="wissen"><i>📖</i>Wissen</button>
   <button data-tab="rechner"><i>🧮</i>Rechner</button>
 </nav>
-
 <script src="version.js"></script>
-<script>
-"use strict";
-/* ===================== Speicher ===================== */
-const KEY = "foxstanze.v1";
-function load(){
-  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && d.jobs) return d; }catch(e){}
-  return null;
-}
-let DB = load() || {jobs:[], shifts:[], notes:{}, quizBest:0, theme:"auto", seeded:false};
-function save(){
-  try{ localStorage.setItem(KEY, JSON.stringify(DB)); return true; }
-  catch(e){ toast("Speicher voll – bitte Fotos löschen oder sichern"); return false; }
-}
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const num = v => { let t = String(v ?? "").trim().replace(/\s/g,""); if(t.includes(",")) t = t.replace(/\./g,"").replace(",", "."); const n = parseFloat(t); return isNaN(n) ? null : n; };
-const CAP = window.Capacitor, NATIVE = !!(CAP && CAP.nativePromise);
-const capCall = (plugin, method, opts) => NATIVE ? CAP.nativePromise(plugin, method, opts || {}) : Promise.reject("web");
-const fmt = (n, d=0) => n == null || isNaN(n) ? "–" : n.toLocaleString("de-DE",{minimumFractionDigits:d, maximumFractionDigits:d});
-const today = () => new Date().toISOString().slice(0,10);
-const dDE = iso => iso ? iso.split("-").reverse().join(".") : "";
-function toast(t){ const el=document.createElement("div"); el.className="toast"; el.textContent=t; document.body.appendChild(el); setTimeout(()=>el.remove(),2200); }
-
-/* ===================== Rüstblatt-Aufbau ===================== */
-/* Felder angelehnt an die Bildschirme der Göpfert-Bedienung. AS = Antriebsseite, BS = Bedienseite. */
-const SECTIONS = [
-  {id:"anleger", icon:"📥", title:"Anleger", fields:[
-    {k:"anl_seitenf_as", l:"Seitenführung AS", u:"mm", h:"Bildschirm: 634,0 (gekoppelt 🔗)"},
-    {k:"anl_seitenf_bs", l:"Seitenführung BS", u:"mm", h:"Bildschirm: −634,0"},
-    {k:"anl_anschlag_pos_as", l:"Anschlag Position AS", u:"mm", h:"Bildschirm: 500"},
-    {k:"anl_anschlag_pos_bs", l:"Anschlag Position BS", u:"mm", h:"Bildschirm: −500"},
-    {k:"anl_anschlag_h_as", l:"Anschlag Höhe AS", u:"mm", h:"Bildschirm: 1,8"},
-    {k:"anl_anschlag_h_bs", l:"Anschlag Höhe BS", u:"mm", h:"Bildschirm: 1,8"},
-    {k:"anl_hinteranschlag", l:"Hinteranschlag", u:"mm", h:"Bildschirm: 1235 (Format)"},
-    {k:"anl_band", l:"Band / Transport", u:"", h:"Bildschirm: 1,5"},
-    {k:"anl_sensor", l:"Sensor-Wert", u:"", h:"Bildschirm: 32 / 52"},
-    {k:"anl_walze", l:"Walze / Einzug Höhe", u:"", h:"Bildschirm: 0"},
-    {k:"anl_geblaese", l:"Gebläse", u:"", h:"Bildschirm: 0"},
-  ]},
-  {id:"stanze", icon:"🔨", title:"Stanze (Tiegel)", fields:[
-    {k:"st_spalt_as", l:"Spalt AS", u:"mm", h:"Bildschirm: −1,34 (gekoppelt 🔗)"},
-    {k:"st_spalt_bs", l:"Spalt BS", u:"mm", h:"Bildschirm: −1,34"},
-    {k:"st_druck", l:"Druck", u:"t", h:"Bildschirm: 238 t"},
-    {k:"st_tiegel", l:"Position Tiegel", u:"°", h:"Bildschirm: 184,4"},
-    {k:"st_temp1", l:"Temperatur 1", u:"°C", h:"Bildschirm: 38,1"},
-    {k:"st_temp2", l:"Temperatur 2", u:"°C", h:"Bildschirm: 38,7"},
-    {k:"st_werkzeug", l:"Stanzwerkzeug-Nr.", u:"", h:"", full:true, text:true},
-    {k:"st_zurichtung", l:"Zurichtung / Unterlage", u:"", h:"z. B. wo Papier untergelegt wurde", full:true, text:true},
-  ]},
-  {id:"ausbrech", icon:"🪓", title:"Ausbrechstation", fields:[
-    {k:"ab_seitenf_as", l:"Seitenführung AS", u:"mm", h:"Bildschirm: 524 (gekoppelt 🔗)"},
-    {k:"ab_seitenf_bs", l:"Seitenführung BS", u:"mm", h:"Bildschirm: −537"},
-    {k:"ab_hoehe", l:"Höhe Oberteil", u:"mm", h:"Bildschirm: 0"},
-    {k:"ab_laenge", l:"Format / Anschlag", u:"mm", h:"Bildschirm: 1282"},
-    {k:"ab_unter", l:"Unterteil Position", u:"mm", h:"Bildschirm: 1007"},
-    {k:"ab_werkzeug", l:"Ausbrechwerkzeug-Nr.", u:"", h:"", full:true, text:true},
-  ]},
-  {id:"ablage", icon:"📦", title:"Bogenablager", fields:[
-    {k:"bl_seitenf_as", l:"Seitenführung AS", u:"mm", h:"Bildschirm: 625 (gekoppelt 🔗)"},
-    {k:"bl_seitenf_bs", l:"Seitenführung BS", u:"mm", h:"Bildschirm: −626"},
-    {k:"bl_hinten", l:"Hinteranschlag", u:"mm", h:"Bildschirm: 1205"},
-    {k:"bl_buerste", l:"Bürstenwalze", u:"", h:"Bildschirm: 48"},
-    {k:"bl_klappe", l:"Klappe / Neigung", u:"", h:"Bildschirm: 0,0"},
-    {k:"bl_stapel", l:"Stapelhöhe", u:"", h:"Bildschirm: 100"},
-  ]},
-  {id:"auslauf", icon:"➡️", title:"Auslauftransport", fields:[
-    {k:"au_band", l:"Bandgeschwindigkeit", u:"", h:"Bildschirm: 50"},
-    {k:"au_takt", l:"Zeit", u:"s", h:"Bildschirm: 0,5"},
-    {k:"au_hoehe", l:"Höhe", u:"mm", h:"Bildschirm: 555"},
-  ]},
-  {id:"stopper", icon:"🚦", title:"Stopperüberwachung", fields:[
-    {k:"sp_kp1", l:"Kontrollpunkt 1", u:"mm", h:"Abstand zur Bogenvorderkante · Bildschirm: 150"},
-    {k:"sp_kp2", l:"Kontrollpunkt 2", u:"mm", h:"Bildschirm: 1085"},
-  ]},
-];
-const JOB_TOGGLES = [
-  {k:"einschub", l:"Einschub Automatik"},
-  {k:"bremsbuerste", l:"Bremsbürste"},
-];
-
-/* Beispiel von deinen Fotos (18.11.2026) */
-function seed(){
-  if(DB.seeded) return;
-  DB.seeded = true;
-  DB.jobs.push({
-    id: uid(), kunde:"Seyfert", artikel:"6040", format:"1235 x 1268", dicke:"1,2",
-    speed:"3300", leerhuebe:"4", einschub:true, bremsbuerste:true,
-    notiz:"Beispiel – Werte von den Fotos vom 18.11.2026. Ausstoß lag bei 3173 Stck/h.",
-    values:{anl_seitenf_as:"634,0",anl_seitenf_bs:"-634,0",anl_anschlag_pos_as:"500",anl_anschlag_pos_bs:"-500",anl_anschlag_h_as:"1,8",anl_anschlag_h_bs:"1,8",anl_hinteranschlag:"1235",anl_band:"1,5",anl_sensor:"32 / 52",anl_walze:"0",anl_geblaese:"0",
-      st_spalt_as:"-1,34",st_spalt_bs:"-1,34",st_druck:"238",st_tiegel:"184,4",st_temp1:"38,1",st_temp2:"38,7",
-      ab_seitenf_as:"524",ab_seitenf_bs:"-537",ab_hoehe:"0",ab_laenge:"1282",ab_unter:"1007",
-      bl_seitenf_as:"625",bl_seitenf_bs:"-626",bl_hinten:"1205",bl_buerste:"48",bl_klappe:"0,0",bl_stapel:"100",
-      au_band:"50",au_takt:"0,5",au_hoehe:"555",sp_kp1:"150",sp_kp2:"1085"},
-    extra:{}, photos:[], created:Date.now(), updated:Date.now(), used:Date.now()
-  });
-  save();
-}
-
-/* ===================== Navigation ===================== */
-let TAB = "ruesten", SUB = null;
-document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { TAB = b.dataset.tab; SUB = null; render(); scrollTo(0,0); });
-function render(){
-  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === TAB));
-  const v = document.getElementById("view");
-  ({ruesten:viewRuesten, schicht:viewSchicht, wissen:viewWissen, rechner:viewRechner})[TAB](v);
-}
-
-/* ===================== RÜSTEN ===================== */
-let jobFilter = "";
-function viewRuesten(v){
-  if(SUB) return viewJob(v, SUB);
-  const list = DB.jobs.filter(j => (j.artikel+" "+j.kunde+" "+(j.notiz||"")).toLowerCase().includes(jobFilter.toLowerCase()))
-    .sort((a,b) => (b.used||b.updated) - (a.used||a.updated));
-  v.innerHTML = `
-    <div class="hero"><div class="big">🧰</div><small>Rüstblätter</small><h1>${DB.jobs.length} Artikel gespeichert</h1>
-      <p>Einstellwerte pro Artikel ablegen – beim nächsten Auftrag einfach aufrufen und übernehmen.</p></div>
-    <input class="search" id="q" placeholder="🔍 Artikel oder Kunde suchen" value="${esc(jobFilter)}">
-    <div id="list">${list.length ? list.map(j => `
-      <div class="item" data-id="${j.id}"><div class="t"><b>Artikel ${esc(j.artikel)||"–"}</b>
-        <small>${esc(j.kunde)} · ${esc(j.format)||"Format ?"} · ${esc(j.dicke)?esc(j.dicke)+" mm":""} ${j.photos&&j.photos.length?"· 📷"+j.photos.length:""}</small>
-        <small>Geändert ${new Date(j.updated).toLocaleDateString("de-DE")}</small></div><div class="go">›</div></div>`).join("")
-      : `<div class="empty">Nichts gefunden.</div>`}</div>
-    <button class="btn fox" id="newJob">＋ Neuer Artikel</button>`;
-  const q = v.querySelector("#q");
-  q.oninput = () => { jobFilter = q.value; const pos=q.selectionStart; render(); const n=document.getElementById("q"); n.focus(); n.setSelectionRange(pos,pos); };
-  v.querySelectorAll(".item").forEach(el => el.onclick = () => { SUB = el.dataset.id; const j=DB.jobs.find(x=>x.id===SUB); if(j){j.used=Date.now(); save();} render(); scrollTo(0,0); });
-  v.querySelector("#newJob").onclick = () => {
-    const j = {id:uid(), kunde:"", artikel:"", format:"", dicke:"", speed:"", leerhuebe:"", einschub:true, bremsbuerste:false, notiz:"", values:{}, extra:{}, photos:[], created:Date.now(), updated:Date.now(), used:Date.now(), _new:true};
-    DB.jobs.push(j); SUB = j.id; render(); scrollTo(0,0);
-  };
-}
-
-function fieldHTML(f, val){
-  if(f.text) return `<label class="f ${f.full?"full":""}"><span>${esc(f.l)}</span><input data-k="${f.k}" value="${esc(val)}"></label>${f.h?`<div class="hint ${f.full?"full":""}">${esc(f.h)}</div>`:""}`;
-  return `<label class="f ${f.full?"full":""}"><span>${esc(f.l)}</span><div class="unit"><input data-k="${f.k}" inputmode="decimal" value="${esc(val)}" placeholder="${esc((f.h.match(/Bildschirm: ([^ (]+)/)||[])[1]||"")}"><em>${esc(f.u)}</em></div></label>`;
-}
-
-function viewJob(v, id){
-  const j = DB.jobs.find(x => x.id === id);
-  if(!j){ SUB=null; return render(); }
-  const filled = s => s.fields.filter(f => (j.values[f.k]??"") !== "").length + (j.extra[s.id]||[]).length;
-  v.innerHTML = `
-    <button class="back" id="back">‹ Alle Artikel</button>
-    <div class="card">
-      <div class="grid">
-        <label class="f"><span>Artikel-Nr.</span><input id="j_artikel" value="${esc(j.artikel)}" inputmode="numeric"></label>
-        <label class="f"><span>Kunde</span><input id="j_kunde" value="${esc(j.kunde)}"></label>
-        <label class="f"><span>Format (L x B)</span><input id="j_format" value="${esc(j.format)}" placeholder="1235 x 1268"></label>
-        <label class="f"><span>Bogendicke</span><div class="unit"><input id="j_dicke" inputmode="decimal" value="${esc(j.dicke)}"><em>mm</em></div></label>
-        <label class="f"><span>Geschwindigkeit</span><div class="unit"><input id="j_speed" inputmode="numeric" value="${esc(j.speed)}"><em>/h</em></div></label>
-        <label class="f"><span>Leerhübe</span><input id="j_leerhuebe" inputmode="numeric" value="${esc(j.leerhuebe)}"></label>
-      </div>
-      ${JOB_TOGGLES.map(t => `<div class="tog"><span>${t.l}</span><label class="sw"><input type="checkbox" id="j_${t.k}" ${j[t.k]?"checked":""}><span></span></label></div>`).join("")}
-    </div>
-    ${SECTIONS.map(s => `
-      <details class="sec" data-s="${s.id}"><summary>${s.icon} ${s.title}<span class="n">${filled(s)} Werte</span></summary>
-        <div class="body"><div class="grid">${s.fields.map(f => fieldHTML(f, j.values[f.k])).join("")}</div>
-          <div class="ex">${(j.extra[s.id]||[]).map((e,i) => `<div class="extra"><input placeholder="Bezeichnung" data-ex="${s.id}" data-i="${i}" data-p="n" value="${esc(e.n)}"><input placeholder="Wert" data-ex="${s.id}" data-i="${i}" data-p="v" value="${esc(e.v)}"><button data-del="${s.id}" data-i="${i}">✕</button></div>`).join("")}</div>
-          <button class="addx" data-add="${s.id}">＋ Eigenen Wert hinzufügen</button>
-        </div></details>`).join("")}
-    <h2>Fotos <span>Werkzeug, Zurichtung, Stapel …</span></h2>
-    <div class="card"><div class="photos">${(j.photos||[]).map((p,i)=>`<div class="ph"><img src="${p}" data-big="${i}"><button data-pdel="${i}">✕</button></div>`).join("")}
-      <label><i>📷</i>Foto<input type="file" accept="image/*" id="photoIn" hidden></label></div></div>
-    <h2>Notizen</h2>
-    <div class="card"><textarea id="j_notiz" placeholder="Besonderheiten, Probleme, Tipps für das nächste Mal …">${esc(j.notiz)}</textarea></div>
-    <button class="btn light" id="copyJob">⧉ Als neuen Artikel kopieren</button>
-    <button class="btn light" id="shiftFrom">📋 Schicht für diesen Artikel eintragen</button>
-    <button class="btn bad" id="delJob">Artikel löschen</button>
-    <div class="sticky"><button class="btn" id="saveJob">💾 Speichern</button></div>`;
-
-  const open = JSON.parse(sessionStorage.getItem("open")||"[]");
-  v.querySelectorAll("details.sec").forEach(d => { if(open.includes(d.dataset.s)) d.open = true;
-    d.ontoggle = () => { const o = [...v.querySelectorAll("details.sec[open]")].map(x=>x.dataset.s); sessionStorage.setItem("open", JSON.stringify(o)); }; });
-
-  const collect = () => {
-    ["artikel","kunde","format","dicke","speed","leerhuebe","notiz"].forEach(k => j[k] = v.querySelector("#j_"+k).value.trim());
-    JOB_TOGGLES.forEach(t => j[t.k] = v.querySelector("#j_"+t.k).checked);
-    v.querySelectorAll("[data-k]").forEach(i => { const val=i.value.trim(); if(val) j.values[i.dataset.k]=val; else delete j.values[i.dataset.k]; });
-    v.querySelectorAll("[data-ex]").forEach(i => { j.extra[i.dataset.ex][+i.dataset.i][i.dataset.p] = i.value; });
-  };
-  const doSave = (quiet) => {
-    collect();
-    if(!j.artikel){ toast("Bitte Artikel-Nr. eintragen"); return false; }
-    delete j._new; j.updated = Date.now();
-    for(const s in j.extra) j.extra[s] = j.extra[s].filter(e => (e.n||"").trim() || (e.v||"").trim());
-    if(save() && !quiet) toast("Gespeichert ✓");
-    return true;
-  };
-  v.querySelector("#back").onclick = () => {
-    collect();
-    if(j._new && !j.artikel){ DB.jobs = DB.jobs.filter(x=>x!==j); }
-    else if(j.artikel){ delete j._new; save(); }
-    SUB=null; render(); scrollTo(0,0);
-  };
-  v.querySelector("#saveJob").onclick = () => doSave();
-  v.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { collect(); (j.extra[b.dataset.add] ||= []).push({n:"",v:""}); render(); const d=v.querySelector(`details[data-s="${b.dataset.add}"]`); d.open=true; const ins=d.querySelectorAll(".extra input"); ins[ins.length-2]?.focus(); });
-  v.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { collect(); j.extra[b.dataset.del].splice(+b.dataset.i,1); render(); });
-  v.querySelector("#delJob").onclick = () => confirmBox(`Artikel ${j.artikel||""} wirklich löschen?`, () => { DB.jobs = DB.jobs.filter(x=>x!==j); save(); SUB=null; render(); toast("Gelöscht"); });
-  v.querySelector("#copyJob").onclick = () => { if(!doSave(true)) return; const c = JSON.parse(JSON.stringify(j)); Object.assign(c,{id:uid(), artikel:"", photos:[], created:Date.now(), updated:Date.now(), used:Date.now(), _new:true}); DB.jobs.push(c); SUB=c.id; render(); scrollTo(0,0); toast("Kopie – neue Artikel-Nr. eintragen"); };
-  v.querySelector("#shiftFrom").onclick = () => { if(!doSave(true)) return; TAB="schicht"; SUB="new:"+j.artikel; render(); scrollTo(0,0); };
-  v.querySelector("#photoIn").onchange = async e => {
-    const f = e.target.files[0]; if(!f) return;
-    collect();
-    try{ const url = await shrink(f, 900, .72); (j.photos ||= []).push(url); if(doSave(true)) toast("Foto hinzugefügt"); render(); }
-    catch(err){ toast("Foto konnte nicht geladen werden"); }
-  };
-  v.querySelectorAll("[data-pdel]").forEach(b => b.onclick = () => confirmBox("Foto löschen?", () => { collect(); j.photos.splice(+b.dataset.pdel,1); save(); render(); }));
-  v.querySelectorAll("[data-big]").forEach(im => im.onclick = () => modal(`<img src="${im.src}" style="width:100%;border-radius:14px"><button class="btn light" data-close>Schließen</button>`));
-}
-
-function shrink(file, max, q){
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => { const img = new Image(); img.onload = () => {
-      const s = Math.min(1, max / Math.max(img.width, img.height));
-      const c = document.createElement("canvas"); c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
-      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", q)); };
-      img.onerror = rej; img.src = r.result; };
-    r.onerror = rej; r.readAsDataURL(file);
-  });
-}
-
-/* ===================== SCHICHT ===================== */
-const STOER_VORLAGEN = ["Greiferrandzerhacker AS geöffnet","Stau","Doppelbogen","Bogen schief / nicht angelegt","Bogenablager voll","Werkzeug nachgerichtet","Ausbrechen hängt","Rüsten","Materialwechsel","Pause / Besprechung"];
-const SCHICHTEN = ["Früh","Spät","Nacht"];
-function guessShift(){ const h = new Date().getHours(); return h>=6&&h<14 ? "Früh" : h>=14&&h<22 ? "Spät" : "Nacht"; }
-
-function viewSchicht(v){
-  if(SUB) return viewShift(v, SUB);
-  const list = [...DB.shifts].sort((a,b) => (b.datum+b.created).localeCompare(a.datum+a.created));
-  const last7 = DB.shifts.filter(s => (Date.now() - new Date(s.datum)) < 7*864e5);
-  const sum7 = last7.reduce((a,s)=>a+(num(s.stueck)||0),0);
-  const st7 = last7.reduce((a,s)=>a+(s.stoer||[]).reduce((b,x)=>b+(num(x.min)||0),0),0);
-  v.innerHTML = `
-    <div class="hero gr"><div class="big">📋</div><small>Schichtprotokoll</small><h1>Letzte 7 Tage</h1>
-      <div class="stats"><div><b>${fmt(sum7)}</b><span>Bogen</span></div><div><b>${last7.length}</b><span>Schichten</span></div><div><b>${fmt(st7)}</b><span>Min. Störung</span></div></div></div>
-    <button class="btn fox" id="newShift" style="margin-bottom:6px">＋ Schicht eintragen</button>
-    <h2>Einträge <span>${list.length}</span></h2>
-    ${list.length ? list.map(s => {
-      const sm = (s.stoer||[]).reduce((b,x)=>b+(num(x.min)||0),0);
-      return `<div class="item" data-id="${s.id}" style="border-left-color:var(--green)"><div class="t"><b>${dDE(s.datum)} · ${esc(s.schicht)}</b>
-        <small>Artikel ${esc(s.artikel)||"–"} · ${fmt(num(s.stueck))} Bogen${s.ausstoss?" · "+fmt(num(s.ausstoss))+"/h":""}</small>
-        ${(s.stoer||[]).length?`<div>${s.stoer.slice(0,3).map(x=>`<span class="tag w">${esc(x.t)}${x.min?" "+esc(x.min)+"′":""}</span>`).join("")}${s.stoer.length>3?`<span class="tag">+${s.stoer.length-3}</span>`:""}</div>`:""}
-      </div><div class="go">›</div></div>`; }).join("") : `<div class="empty">Noch keine Schicht eingetragen.</div>`}`;
-  v.querySelector("#newShift").onclick = () => { SUB="new:"; render(); scrollTo(0,0); };
-  v.querySelectorAll(".item").forEach(el => el.onclick = () => { SUB = el.dataset.id; render(); scrollTo(0,0); });
-}
-
-function viewShift(v, id){
-  let s;
-  if(id.startsWith("new:")){
-    const art = id.slice(4); const job = DB.jobs.find(j=>j.artikel===art);
-    s = {id:uid(), datum:today(), schicht:guessShift(), artikel:art, stueck:"", speed:job?job.speed:"", ausstoss:"", stoer:[], notiz:"", created:Date.now(), _new:true};
-    DB.shifts.push(s); SUB = s.id;
-  } else s = DB.shifts.find(x=>x.id===id);
-  if(!s){ SUB=null; return render(); }
-  const arts = [...new Set(DB.jobs.map(j=>j.artikel).filter(Boolean))];
-  v.innerHTML = `
-    <button class="back" id="back">‹ Alle Schichten</button>
-    <div class="card">
-      <div class="grid">
-        <label class="f"><span>Datum</span><input type="date" id="s_datum" value="${esc(s.datum)}"></label>
-        <label class="f"><span>Artikel</span><input id="s_artikel" list="arts" value="${esc(s.artikel)}" inputmode="numeric"></label>
-      </div>
-      <datalist id="arts">${arts.map(a=>`<option value="${esc(a)}">`).join("")}</datalist>
-      <div class="chips" id="schichtChips">${SCHICHTEN.map(x=>`<button class="chip ${s.schicht===x?"on":""}" data-sch="${x}">${x}</button>`).join("")}</div>
-      <div class="grid">
-        <label class="f"><span>Bogen gestanzt</span><input id="s_stueck" inputmode="numeric" value="${esc(s.stueck)}" placeholder="3237"></label>
-        <label class="f"><span>Ausstoß</span><div class="unit"><input id="s_ausstoss" inputmode="numeric" value="${esc(s.ausstoss)}" placeholder="3173"><em>/h</em></div></label>
-        <label class="f full"><span>Geschwindigkeit eingestellt</span><div class="unit"><input id="s_speed" inputmode="numeric" value="${esc(s.speed)}" placeholder="3300"><em>/h</em></div></label>
-      </div>
-    </div>
-    <h2>Störungen / Meldungen <span>Minuten</span></h2>
-    <div class="card">
-      <div id="stoerList">${(s.stoer||[]).map((x,i)=>`<div class="stoer"><input data-st="${i}" data-p="t" value="${esc(x.t)}" placeholder="Was war los?"><input class="min" data-st="${i}" data-p="min" value="${esc(x.min)}" inputmode="numeric" placeholder="Min"><button data-sdel="${i}">✕</button></div>`).join("")}</div>
-      <div class="small" style="margin:4px 2px 6px">Schnell hinzufügen:</div>
-      <div class="chips">${STOER_VORLAGEN.map(t=>`<button class="chip" data-quick="${esc(t)}">${esc(t)}</button>`).join("")}</div>
-      <button class="addx" id="addStoer">＋ Eigene Störung</button>
-    </div>
-    <h2>Notiz</h2>
-    <div class="card"><textarea id="s_notiz" placeholder="Übergabe an die nächste Schicht …">${esc(s.notiz)}</textarea></div>
-    <button class="btn light" id="shareShift">📤 Übergabe-Text kopieren</button>
-    <button class="btn bad" id="delShift">Eintrag löschen</button>
-    <div class="sticky"><button class="btn" id="saveShift">💾 Speichern</button></div>`;
-  const collect = () => {
-    ["datum","artikel","stueck","ausstoss","speed","notiz"].forEach(k => s[k] = v.querySelector("#s_"+k).value.trim());
-    v.querySelectorAll("[data-st]").forEach(i => s.stoer[+i.dataset.st][i.dataset.p] = i.value.trim());
-  };
-  v.querySelectorAll("[data-sch]").forEach(b => b.onclick = () => { collect(); s.schicht = b.dataset.sch; render(); });
-  v.querySelectorAll("[data-quick]").forEach(b => b.onclick = () => { collect(); s.stoer.push({t:b.dataset.quick, min:""}); render(); const m=v.querySelectorAll("#stoerList .min"); m[m.length-1]?.focus(); });
-  v.querySelector("#addStoer").onclick = () => { collect(); s.stoer.push({t:"",min:""}); render(); const t=v.querySelectorAll('#stoerList [data-p="t"]'); t[t.length-1]?.focus(); };
-  v.querySelectorAll("[data-sdel]").forEach(b => b.onclick = () => { collect(); s.stoer.splice(+b.dataset.sdel,1); render(); });
-  v.querySelector("#back").onclick = () => { collect(); if(s._new && !s.stueck && !s.stoer.length && !s.notiz) DB.shifts = DB.shifts.filter(x=>x!==s); else { delete s._new; save(); } SUB=null; render(); scrollTo(0,0); };
-  v.querySelector("#saveShift").onclick = () => { collect(); s.stoer = s.stoer.filter(x=>x.t||x.min); delete s._new; if(save()) toast("Gespeichert ✓"); SUB=null; render(); scrollTo(0,0); };
-  v.querySelector("#delShift").onclick = () => confirmBox("Schicht-Eintrag löschen?", () => { DB.shifts = DB.shifts.filter(x=>x!==s); save(); SUB=null; render(); });
-  v.querySelector("#shareShift").onclick = () => {
-    collect();
-    const sm = s.stoer.reduce((b,x)=>b+(num(x.min)||0),0);
-    const txt = `Schichtübergabe ${dDE(s.datum)} (${s.schicht})\nArtikel: ${s.artikel||"–"}\nBogen: ${s.stueck||"–"}${s.ausstoss?` · Ausstoß ${s.ausstoss}/h`:""}${s.speed?` · eingestellt ${s.speed}/h`:""}\n`+
-      (s.stoer.length?`Störungen (${sm} Min):\n`+s.stoer.filter(x=>x.t).map(x=>`- ${x.t}${x.min?` (${x.min} Min)`:""}`).join("\n")+"\n":"Keine Störungen\n")+
-      (s.notiz?`Notiz: ${s.notiz}\n`:"");
-    copy(txt);
-  };
-}
-
-/* ===================== WISSEN ===================== */
-const TOPICS = [
-  {id:"ablauf", icon:"🔄", title:"Ablauf durch die Maschine", html:`
-    <div class="flow"><span>📥 Anleger</span><i>→</i><span>🔨 Stanztiegel</span><i>→</i><span>🔁 Bogenübergabe</span><i>→</i><span>🪓 Ausbrechstation</span><i>→</i><span>📦 Bogenablager</span><i>→</i><span>➡️ Auslauf</span></div>
-    <p>Der Bogen wird im <b>Anleger</b> vom Stapel abgenommen, ausgerichtet und an die Greiferleiste übergeben. Die Greifer ziehen ihn durch die ganze Maschine.</p>
-    <p>Im <b>Stanztiegel</b> wird geschnitten und gerillt, in der <b>Ausbrechstation</b> fällt der Abfall (Ausbruch) heraus. Der Greiferrand wird vom <b>Greiferrandzerhacker</b> abgetrennt und zerkleinert. Im <b>Bogenablager</b> werden die fertigen Bogen gestapelt und über den <b>Auslauftransport</b> abgefördert.</p>`},
-  {id:"seiten", icon:"↔️", title:"AS / BS und das Ketten-Symbol 🔗", html:`
-    <p><b>AS</b> = Antriebsseite, <b>BS</b> = Bedienseite. Viele Werte gibt es doppelt, einmal für jede Seite.</p>
-    <p>Ist das grüne <b>Ketten-Symbol 🔗</b> aktiv, sind beide Seiten gekoppelt und bewegen sich gemeinsam – deshalb stehen dann Paare wie <b>634,0</b> und <b>−634,0</b> auf dem Bildschirm (gleicher Abstand zur Mitte, andere Richtung).</p>
-    <p>Kette aus = jede Seite einzeln verstellen, z. B. wenn ein Bogen schief läuft.</p>`},
-  {id:"stanze", icon:"🔨", title:"Stanze: Spalt und Druck", html:`
-    <p>Der <b>Spalt</b> (z. B. −1,34 mm) bestimmt, wie weit Ober- und Untertiegel zusammenfahren. Je kleiner bzw. negativer der Spalt, desto stärker wird zugestellt – der <b>Druck</b> in Tonnen (z. B. 238 t) steigt.</p>
-    <ul><li>Schneidet es nicht durch: Spalt in <b>kleinen Schritten</b> verringern, nicht auf einmal.</li><li>Nur eine Seite schneidet schlecht: Kette lösen und nur diese Seite nachstellen.</li><li>Zu viel Druck schadet Messern, Rillen und Schneidplatte – lieber zurichten als nur Druck erhöhen.</li></ul>
-    <div class="note">Werte immer an die Betriebsanweisung bei Seyfert halten. Die Tipps hier sind allgemein.</div>`},
-  {id:"anleger", icon:"📥", title:"Anleger", html:`
-    <p>Hier stehen die <b>Seitenführungen</b>, die <b>Anschläge</b> und der <b>Hinteranschlag</b> (meist ungefähr das Bogenformat, z. B. 1235). Der grüne Lichtkegel auf dem Bildschirm ist der Sensor, der den Bogen erkennt.</p>
-    <p>Der Bogen muss gerade und ohne Doppelbogen eingezogen werden – sonst Stau oder Fehlschnitt. <b>Einschub Automatik</b> im Produktionsbild schaltet den automatischen Bogeneinschub ein.</p>`},
-  {id:"ausbrech", icon:"🪓", title:"Ausbrechstation", html:`
-    <p>Oberes und unteres Ausbrechwerkzeug drücken den Abfall aus dem gestanzten Bogen. Höhe, Seitenführungen und Position müssen zum Werkzeug passen.</p>
-    <ul><li>Abfall bleibt hängen: Höhe des Oberteils und Stifte prüfen.</li><li>Nutzen fallen mit raus: zu tief zugestellt oder Haltepunkte (Nicks) am Stanzwerkzeug zu klein.</li></ul>`},
-  {id:"ablage", icon:"📦", title:"Bogenablager & Auslauf", html:`
-    <p>Seitenführungen und Hinteranschlag richten den Stapel aus. Die <b>Bürstenwalze</b> und die <b>Bremsbürste</b> bremsen den Bogen ab, damit er sauber liegt.</p>
-    <p>Meldung <b>„Bogenablager voll“</b>: Stapel abfahren. Im Auslauftransport stellst du Bandgeschwindigkeit, Zeit und Höhe ein.</p>`},
-  {id:"stopper", icon:"🚦", title:"Stopperüberwachung", html:`
-    <p>Sensoren auf AS und BS prüfen an jeder Station (Bogenablager, Ausbrechstation, Stanztiegel-Auslauf, Bogenübergabe, Frontanschlag), ob der Bogen richtig ankommt. Grüner Punkt = Sensor in Ordnung.</p>
-    <p>Die <b>Kontrollpunkte</b> (z. B. 150 und 1085 mm) sind die Abstände zur Bogenvorderkante, an denen geprüft wird. Dazu gibt es <b>Bogenimpuls</b>-Sensoren und die <b>Stauüberwachung</b> AS/BS.</p>
-    <div class="note">Überwachungen nie dauerhaft abschalten, um eine Störung zu umgehen.</div>`},
-  {id:"status", icon:"🟢", title:"Status-Lampen & Produktion", html:`
-    <ul><li><b>Steuerung Ein</b> – Steuerung läuft</li><li><b>Sicherheit OK</b> – Türen/Schutz zu, kein Not-Halt</li><li><b>Hauptmotor Ein</b> – Antrieb läuft</li><li><b>Einschub Ein</b> – Bogen werden eingezogen</li><li><b>Belegt</b> – Maschine ist belegt</li></ul>
-    <p>Im Produktionsbild: <b>Gesamt</b> = gestanzte Bogen, <b>Geschwindigkeit</b> = Sollwert (bis 6500/h), <b>Ausstoß</b> = tatsächlich erreicht. <b>Leerhübe</b> = Hübe ohne Bogen, <b>Anstanzen</b> = einzelne Probebogen.</p>
-    <p>Mit <b>Korrekturen speichern</b> sicherst du die Werte für den Artikel in der Maschine – in dieser App hast du sie zusätzlich auf dem Handy.</p>`},
-  {id:"sicher", icon:"🛑", title:"Sicherheit", html:`
-    <ul><li><b>NOT-HALT</b> (roter Pilz) stoppt sofort alles.</li><li>Nie in die Maschine greifen, solange sie nicht gesichert ist.</li><li>Meldungen wie „Greiferrandzerhacker Antriebsseite geöffnet“ bedeuten: eine Schutzeinrichtung ist offen – erst schließen, dann starten.</li><li>Beim Werkzeugwechsel Maschine sichern, wie im Betrieb vorgeschrieben.</li></ul>`},
-];
-const QUIZ = [
-  {q:"Was bedeutet „AS“?", o:["Ausbrech-Station","Antriebsseite","Anleger-Sensor","Automatik-Start"], a:1, e:"AS = Antriebsseite, BS = Bedienseite."},
-  {q:"Warum stehen bei der Seitenführung 634,0 und −634,0?", o:["Messfehler","Beide Seiten sind gekoppelt (🔗) und fahren gleich weit von der Mitte weg","Der Wert ist in Zoll","Die BS ist kaputt"], a:1, e:"Mit aktiver Kette bewegen sich AS und BS gemeinsam – gleicher Abstand, andere Richtung."},
-  {q:"Der Bogen ist nicht durchgeschnitten. Was zuerst?", o:["Spalt in kleinen Schritten verringern","Druck sofort stark erhöhen","Geschwindigkeit auf 6500","Stopperüberwachung abschalten"], a:0, e:"Immer in kleinen Schritten zustellen – und prüfen, ob es nur eine Seite betrifft."},
-  {q:"Was passiert in der Ausbrechstation?", o:["Der Bogen wird bedruckt","Der Abfall wird aus dem Bogen gedrückt","Die Bogen werden gezählt","Der Bogen wird gerillt"], a:1, e:"Ober- und Unterwerkzeug drücken den Ausbruch heraus."},
-  {q:"„Sicherheit OK“ ist aus. Was heißt das meistens?", o:["Alles bestens","Eine Schutzeinrichtung ist offen oder Not-Halt gedrückt","Hauptmotor zu heiß","Auftrag fertig"], a:1, e:"Erst Tür/Schutz schließen bzw. Not-Halt entriegeln und quittieren."},
-  {q:"Geschwindigkeit 3300, Ausstoß 3173 Stck/h – was ist der Ausstoß?", o:["Der eingestellte Wert","Die tatsächlich erreichte Leistung","Die Bogendicke","Die Leerhübe"], a:1, e:"Ausstoß = was wirklich rauskommt."},
-  {q:"Was sind die Kontrollpunkte in der Stopperüberwachung?", o:["Abstände zur Bogenvorderkante, an denen geprüft wird","Temperaturen","Werkzeugnummern","Pausenzeiten"], a:0, e:"z. B. 150 mm und 1085 mm ab Vorderkante."},
-  {q:"Wofür ist der Greiferrandzerhacker?", o:["Er schneidet die Nutzen","Er trennt und zerkleinert den Greiferrand","Er stapelt die Bogen","Er zieht den Bogen ein"], a:1, e:"Der Greiferrand (wo die Greifer festhalten) wird abgetrennt und zerhackt."},
-  {q:"Abfall bleibt in der Ausbrechstation hängen. Was prüfst du?", o:["Höhe Oberteil und Ausbrechstifte","Die Uhrzeit","Den Hauptmotor","Den Bogenablager"], a:0, e:"Höhe und Werkzeug der Ausbrechstation passen nicht."},
-  {q:"Was macht „Leerhübe“?", o:["Hübe ohne Bogen","Doppelte Geschwindigkeit","Bogen zählen","Not-Halt"], a:0, e:"Die Maschine macht Hübe, ohne Bogen einzuziehen."},
-];
-let quiz = null;
-function viewWissen(v){
-  if(SUB === "quiz") return viewQuiz(v);
-  if(SUB) return viewTopic(v, SUB);
-  v.innerHTML = `
-    <div class="hero or"><div class="big">📖</div><small>Wissen & Schulung</small><h1>Die Stanze verstehen</h1>
-      <p>Für dich und für Azubis – mit eigenen Notizen pro Thema.</p></div>
-    <button class="btn" id="startQuiz">🎯 Quiz starten (${QUIZ.length} Fragen)${DB.quizBest?` · Bestwert ${DB.quizBest}/${QUIZ.length}`:""}</button>
-    <h2>Themen</h2>
-    ${TOPICS.map(t=>`<div class="item" data-id="${t.id}" style="border-left-color:var(--accent)"><div class="t"><b>${t.icon} ${t.title}</b>${DB.notes[t.id]?`<small>📝 eigene Notiz</small>`:""}</div><div class="go">›</div></div>`).join("")}`;
-  v.querySelectorAll(".item").forEach(el => el.onclick = () => { SUB = el.dataset.id; render(); scrollTo(0,0); });
-  v.querySelector("#startQuiz").onclick = () => { quiz = {i:0, score:0, order:[...QUIZ.keys()].sort(()=>Math.random()-.5), done:false, ans:null}; SUB="quiz"; render(); scrollTo(0,0); };
-}
-function viewTopic(v, id){
-  const t = TOPICS.find(x=>x.id===id);
-  v.innerHTML = `<button class="back" id="back">‹ Themen</button>
-    <div class="card topic"><h3>${t.icon} ${t.title}</h3>${t.html}</div>
-    <h2>Meine Notiz <span>z. B. was bei uns anders ist</span></h2>
-    <div class="card"><textarea id="note" placeholder="Eigene Tipps, Erfahrungen, Hinweise für Azubis …">${esc(DB.notes[id]||"")}</textarea>
-    <button class="btn sm" id="saveNote" style="margin-top:8px">Notiz speichern</button></div>`;
-  v.querySelector("#back").onclick = () => { SUB=null; render(); };
-  v.querySelector("#saveNote").onclick = () => { const n=v.querySelector("#note").value.trim(); if(n) DB.notes[id]=n; else delete DB.notes[id]; save(); toast("Notiz gespeichert"); };
-}
-function viewQuiz(v){
-  if(quiz.done){
-    const p = quiz.score;
-    v.innerHTML = `<div class="hero ${p>=8?"gr":"or"}"><div class="big">🏆</div><small>Ergebnis</small><h1>${p} von ${QUIZ.length} richtig</h1><p>${p===QUIZ.length?"Perfekt – Meister der Stanze!":p>=8?"Sehr gut!":p>=5?"Gut, schau dir die Themen nochmal an.":"Lies die Themen durch und versuch es nochmal."}</p></div>
-      <button class="btn" id="again">Nochmal</button><button class="btn light" id="back">Zurück zu Wissen</button>`;
-    v.querySelector("#again").onclick = () => { quiz = {i:0, score:0, order:[...QUIZ.keys()].sort(()=>Math.random()-.5), done:false, ans:null}; render(); };
-    v.querySelector("#back").onclick = () => { SUB=null; render(); };
-    return;
-  }
-  const Q = QUIZ[quiz.order[quiz.i]];
-  v.innerHTML = `<button class="back" id="back">‹ Abbrechen</button>
-    <div class="card"><div class="small">Frage ${quiz.i+1} von ${QUIZ.length} · ${quiz.score} richtig</div>
-    <h3 style="font-size:19px;margin:8px 0 12px">${esc(Q.q)}</h3>
-    ${Q.o.map((o,i)=>`<button class="qopt ${quiz.ans!=null?(i===Q.a?"r":i===quiz.ans?"f":""):""}" data-o="${i}" ${quiz.ans!=null?"disabled":""}>${esc(o)}</button>`).join("")}
-    ${quiz.ans!=null?`<div class="qexp"><b>${quiz.ans===Q.a?"✅ Richtig!":"❌ Nicht ganz."}</b> ${esc(Q.e)}</div><button class="btn" id="next">${quiz.i+1<QUIZ.length?"Weiter":"Ergebnis"}</button>`:""}</div>`;
-  v.querySelector("#back").onclick = () => { SUB=null; render(); };
-  v.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { quiz.ans = +b.dataset.o; if(quiz.ans===Q.a) quiz.score++; render(); });
-  const n = v.querySelector("#next"); if(n) n.onclick = () => { quiz.i++; quiz.ans=null; if(quiz.i>=QUIZ.length){ quiz.done=true; if(quiz.score>DB.quizBest){DB.quizBest=quiz.score; save();} } render(); };
-}
-
-/* ===================== RECHNER ===================== */
-const calc = {soll:"", ist:"", aus:"", nutzen:"", bogen:"", stapelH:"", dicke:""};
-function viewRechner(v){
-  v.innerHTML = `
-    <div class="hero"><div class="big">🧮</div><small>Rechner</small><h1>Schnell gerechnet</h1><p>Restzeit, Nutzen und Stapel.</p></div>
-    <h2>⏱️ Restzeit bis Auftrag fertig</h2>
-    <div class="card"><div class="grid">
-      <label class="f"><span>Soll-Menge (Bogen)</span><input data-c="soll" inputmode="numeric" value="${esc(calc.soll)}"></label>
-      <label class="f"><span>Schon gestanzt</span><input data-c="ist" inputmode="numeric" value="${esc(calc.ist)}" placeholder="3237"></label>
-      <label class="f full"><span>Ausstoß</span><div class="unit"><input data-c="aus" inputmode="numeric" value="${esc(calc.aus)}" placeholder="3173"><em>/h</em></div></label>
-    </div><div id="r1"></div></div>
-    <h2>📦 Stück aus Bogen</h2>
-    <div class="card"><div class="grid">
-      <label class="f"><span>Nutzen pro Bogen</span><input data-c="nutzen" inputmode="numeric" value="${esc(calc.nutzen)}"></label>
-      <label class="f"><span>Bogen</span><input data-c="bogen" inputmode="numeric" value="${esc(calc.bogen)}"></label>
-    </div><div id="r2"></div></div>
-    <h2>📏 Bogen im Stapel</h2>
-    <div class="card"><div class="grid">
-      <label class="f"><span>Stapelhöhe</span><div class="unit"><input data-c="stapelH" inputmode="decimal" value="${esc(calc.stapelH)}"><em>mm</em></div></label>
-      <label class="f"><span>Bogendicke</span><div class="unit"><input data-c="dicke" inputmode="decimal" value="${esc(calc.dicke)}" placeholder="1,2"><em>mm</em></div></label>
-    </div><div id="r3"></div><div class="small">Grober Richtwert – Wellpappe federt, lieber nachzählen.</div></div>`;
-  const upd = () => {
-    const soll=num(calc.soll), ist=num(calc.ist)||0, aus=num(calc.aus);
-    const rest = soll!=null ? Math.max(0, soll-ist) : null;
-    let r1 = `<div class="small">Soll-Menge und Ausstoß eintragen.</div>`;
-    if(rest!=null && aus){ const h = rest/aus; const fin = new Date(Date.now()+h*3600e3);
-      r1 = `<div class="res ctime">${Math.floor(h)} h ${Math.round((h%1)*60)} min</div><div class="small">Noch ${fmt(rest)} Bogen · fertig ca. ${fin.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})} Uhr${fin.toDateString()!==new Date().toDateString()?" ("+fin.toLocaleDateString("de-DE",{weekday:"short"})+")":""} – ohne Störungen</div>`; }
-    v.querySelector("#r1").innerHTML = r1;
-    const n=num(calc.nutzen), b=num(calc.bogen);
-    v.querySelector("#r2").innerHTML = n&&b ? `<div class="res">${fmt(n*b)} Stück</div>` : `<div class="small">Nutzen und Bogen eintragen.</div>`;
-    const sh=num(calc.stapelH), d=num(calc.dicke);
-    v.querySelector("#r3").innerHTML = sh&&d ? `<div class="res">≈ ${fmt(Math.floor(sh/d))} Bogen</div>` : "";
-  };
-  v.querySelectorAll("[data-c]").forEach(i => i.oninput = () => { calc[i.dataset.c] = i.value; upd(); });
-  upd();
-}
-
-/* ===================== Dialoge, Sichern, Theme ===================== */
-function modal(html){
-  const m = document.createElement("div"); m.className="modal"; m.innerHTML = `<div class="sheet">${html}</div>`;
-  m.onclick = e => { if(e.target===m || e.target.closest("[data-close]")) m.remove(); };
-  document.body.appendChild(m); return m;
-}
-function confirmBox(text, yes){
-  const m = modal(`<h3>${esc(text)}</h3><button class="btn bad" id="yes" style="background:var(--bad);color:#fff;border:0">Ja, löschen</button><button class="btn light" data-close>Abbrechen</button>`);
-  m.querySelector("#yes").onclick = () => { m.remove(); yes(); };
-}
-async function copy(txt){
-  try{ await navigator.clipboard.writeText(txt); toast("Kopiert – z. B. in WhatsApp einfügen"); }
-  catch(e){ modal(`<h3>Text</h3><textarea style="min-height:200px">${esc(txt)}</textarea><button class="btn light" data-close>Schließen</button>`); }
-}
-async function exportData(){
-  const data = JSON.stringify(DB);
-  const name = "fox-stanze-sicherung-" + today() + ".json";
-  if(NATIVE){
-    try{
-      const r = await capCall("Filesystem","writeFile",{path:name, data, directory:"CACHE", encoding:"utf8"});
-      await capCall("Share","share",{title:"Fox Stanze Sicherung", url:r.uri, dialogTitle:"Sicherung speichern oder senden"});
-      return;
-    }catch(e){ if(/cancel/i.test(String(e && (e.message||e)))) return; }
-  }
-  try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([data],{type:"application/json"})); a.download=name; a.click(); toast("Sicherung heruntergeladen"); }
-  catch(e){ copy(data); }
-}
-function importData(text){
-  try{
-    const d = JSON.parse(text);
-    if(!d || !Array.isArray(d.jobs)) throw 0;
-    confirmBox(`Sicherung mit ${d.jobs.length} Artikeln und ${(d.shifts||[]).length} Schichten einspielen? Aktuelle Daten werden ersetzt.`, () => {
-      DB = Object.assign({jobs:[],shifts:[],notes:{},quizBest:0,theme:"auto",seeded:true}, d); save(); applyTheme(); SUB=null; render(); toast("Sicherung eingespielt ✓"); });
-    document.querySelector("#yes").textContent = "Ja, einspielen";
-  }catch(e){ toast("Das ist keine gültige Fox-Stanze-Sicherung"); }
-}
-document.getElementById("btnMenu").onclick = () => {
-  const m = modal(`<h3>Daten sichern</h3>
-    <p class="small" style="margin-bottom:6px">Alles bleibt nur auf deinem Handy. Mach ab und zu eine Sicherung, z. B. vor einem Handywechsel.</p>
-    <button class="btn" id="exp">📤 Sicherung erstellen / teilen</button>
-    <label class="btn light" style="text-align:center">📥 Sicherung einspielen<input type="file" accept=".json,application/json,text/plain" id="imp" hidden></label>
-    <button class="btn light" id="paste">📋 Sicherung aus Zwischenablage</button>
-    <p class="small" style="margin-top:12px;text-align:center">Fox Stanze · Build ${window.APP_BUILD||"dev"} · ${DB.jobs.length} Artikel · ${DB.shifts.length} Schichten</p>
-    <button class="btn light" data-close>Schließen</button>`);
-  m.querySelector("#exp").onclick = () => { m.remove(); exportData(); };
-  m.querySelector("#imp").onchange = e => { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ m.remove(); importData(r.result); }; r.readAsText(f); };
-  m.querySelector("#paste").onclick = async () => { try{ const t = await navigator.clipboard.readText(); m.remove(); importData(t); }catch(e){ toast("Zwischenablage nicht lesbar"); } };
-};
-function applyTheme(){
-  const dark = DB.theme==="dark" || (DB.theme==="auto" && matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-  document.getElementById("btnTheme").textContent = dark ? "☀️" : "🌙";
-}
-document.getElementById("btnTheme").onclick = () => {
-  const dark = document.documentElement.getAttribute("data-theme")==="dark";
-  DB.theme = dark ? "light" : "dark"; save(); applyTheme();
-};
-
-/* Android-Zurück-Taste */
-function onBack(){
-  const m = document.querySelector(".modal"); if(m){ m.remove(); return; }
-  const b = document.querySelector(".back"); if(b){ b.click(); return; }
-  if(TAB!=="ruesten"){ TAB="ruesten"; SUB=null; render(); return; }
-  capCall("App","exitApp").catch(()=>{});
-}
-if(NATIVE && CAP.nativeCallback){ try{ CAP.nativeCallback("App","addListener",{eventName:"backButton"}, () => onBack()); }catch(e){} }
-
-seed(); applyTheme(); render();
-</script>
+<script src="lib/jsQR.js"></script>
+<script src="lib/qrcode.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

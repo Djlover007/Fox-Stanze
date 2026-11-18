@@ -36,7 +36,7 @@ jobs:
           npx capacitor-assets generate --android
           npx cap sync android
 
-      - name: Version und feste Signatur eintragen
+      - name: Eigenen Android-Code, Version und feste Signatur eintragen
         run: |
           GRADLE=android/app/build.gradle
           grep -q "versionCode 1" "$GRADLE" || { echo "versionCode nicht gefunden"; exit 1; }
@@ -44,6 +44,15 @@ jobs:
           sed -i 's/versionName "1.0"/versionName "1.${{ github.run_number }}"/' "$GRADLE"
           cp fox-stanze.keystore android/fox-stanze.keystore
           cat signing.gradle >> "$GRADLE"
+          grep -q "^dependencies {" "$GRADLE" || { echo "dependencies nicht gefunden"; exit 1; }
+          sed -i '0,/^dependencies {/s//dependencies {\n    implementation "com.google.mlkit:text-recognition:16.0.1"/' "$GRADLE"
+          JAVA_DIR=android/app/src/main/java/de/fox/stanze
+          test -f "$JAVA_DIR/MainActivity.java" || { echo "MainActivity nicht gefunden"; exit 1; }
+          cp native/*.java "$JAVA_DIR/"
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          grep -q POST_NOTIFICATIONS "$MANIFEST" || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' "$MANIFEST"
+          grep -n "mlkit" "$GRADLE"
+          grep -n "POST_NOTIFICATIONS" "$MANIFEST"
 
       - name: APK bauen
         working-directory: android
