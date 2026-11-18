@@ -1,0 +1,16 @@
+
+android {
+    signingConfigs {
+        fox {
+            storeFile file("../fox-stanze.keystore")
+            storePassword "foxstanze123"
+            keyAlias "fox"
+            keyPassword "foxstanze123"
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.fox
+        }
+    }
+}
