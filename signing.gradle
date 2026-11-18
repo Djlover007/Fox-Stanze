@@ -14,3 +14,12 @@ android {
         }
     }
 }
+
+// Nur Handy-Prozessoren einpacken – hält die APK klein
+android {
+    defaultConfig {
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
+    }
+}
