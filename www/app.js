@@ -879,6 +879,58 @@ const GUIDE = [
  ]},
 
  {id:"stationen", t:"Corrpal Stationsfenster", icon:"🧩", items:[
+  {img:"s-bs1-schritte", st:"BS1", t:"BS1 Brecher 1 › Schrittliste", s:[
+    "<b>0 Infeed Conveyor Common</b> (1364, SingleInfeed): Bündel fährt von der Stanze in den Brecher.",
+    "<b>1 Break</b>: Brecher bricht das Bündel an den Haltepunkten – das Symbol ←┆→ zeigt die Bruchlinie.",
+    "<b>2 Outfeed Conveyor Common</b> (1164, ClearConveyor): die Nutzen-Stapel fahren weiter zu AC1.",
+    "Oben rechts die <b>Bündelhöhe</b> (hier 138 mm) – kommt aus dem Auftrag."]},
+  {img:"s-ac1-korrektur", st:"AC1", t:"AC1 Winkelförderer 1 › Korrektur", s:[
+    "Kleine Tabelle: <b>#</b> = Zeile (Stapel 1), darunter zwei Felder – unter <b>X▶</b> (hier 1) und unter <b>+/−</b> (hier 0).",
+    "Wahrscheinlich Position bzw. Versatz in Förderrichtung; 0 = keine Korrektur. <i>Bedeutung nicht sicher – bitte an der Maschine prüfen.</i>",
+    "AC2 und AC3 haben dieselbe Tabelle."]},
+  {img:"s-ac1-steuern", st:"AC1", t:"AC1 Winkelförderer 1 › Steuern", s:[
+    "Längsbänder (blau) und Querrollen. <b>← →</b> fährt die Bänder, die <b>schrägen Pfeile</b> das andere Band.",
+    "<b>↓ ↑</b> hebt/senkt die Rollen – damit wird umgeschaltet, in welche Richtung der Stapel weiterfährt.",
+    "Rechts der Pfeil mit 🔗 = Eingang (gekoppelt an BS1), oben der Pfeil mit 🔗 = Ausgang (gekoppelt an BS2)."]},
+  {img:"s-ac1-schritte", st:"AC1", t:"AC1 Winkelförderer 1 › Schrittliste", s:[
+    "<b>Infeed Conveyor 1</b> (1574): Stapel fährt ein.",
+    "<b>1 Outfeed Conveyor 2</b> (1629, ClearConveyor): Stapel fährt im 90°-Winkel raus (Symbol ↰)."]},
+  {img:"s-bs2-korrektur", st:"BS2", t:"BS2 Brecher 2 › Korrektur", s:[
+    "Oben (Stapel mit ↕, hier 0): Höhenkorrektur – wahrscheinlich für den orangen Niederhalter oben.",
+    "Rechts (hier 4,0, grüner Balken): Korrekturwert für das Brechen. <i>Genaue Bedeutung nicht sicher.</i>",
+    "Unten links Tacho (60) = Geschwindigkeit in %, unten rechts ←→ (0) = Versatz quer.",
+    "Bricht es nicht sauber: erst Zyklen im Auftrag prüfen, dann hier in kleinen Schritten korrigieren."]},
+  {img:"s-bs2-steuern", st:"BS2", t:"BS2 Brecher 2 › Steuern", s:[
+    "Links und rechts je <b>↓ ↑</b> (zwei Reihen) mit Wert 420: Niederhalter bzw. Brechbalken heben/senken.",
+    "<b>← →</b> mit 🔗: die Bänder fahren, gekoppelt.",
+    "Unten <b>↺ ↻</b> mit 360: Brechwelle drehen (Position in Grad).",
+    "Oben und unten Pfeil mit 🔗 = Ein- und Ausgang. Handbetrieb nur, wenn niemand in der Anlage ist."]},
+  {img:"s-bs2-schritte", st:"BS2", t:"BS2 Brecher 2 › Schrittliste", s:[
+    "<b>Infeed Conveyor Common</b> (1250) und <b>1 Outfeed Conveyor Common</b> (1348).",
+    "Hier steht <b>kein Break-Schritt</b> – bei diesem Auftrag bricht BS2 also nicht, die Stapel laufen nur durch. Das Symbol ↕ zeigt die Bruchrichtung (quer zu BS1)."]},
+  {img:"s-ac2-korrektur", st:"AC2", t:"AC2 Winkelförderer 2 › Korrektur", s:["Gleiche Tabelle wie bei AC1: Zeile 1, X▶ = 1, +/− = 0."]},
+  {img:"s-ac2-steuern", st:"AC2", t:"AC2 Winkelförderer 2 › Steuern", s:[
+    "<b>← →</b> Bänder, <b>schräge Pfeile</b> zweites Band, <b>↓ ↑</b> Rollen heben/senken.",
+    "Unten Pfeil mit 🔗 = Eingang von BS2, links Pfeil mit 🔗 = Ausgang zum Drehtisch TT1."]},
+  {img:"s-ac2-schritte", st:"AC2", t:"AC2 Winkelförderer 2 › Schrittliste", s:[
+    "<b>Infeed Conveyor 1</b> (1834), <b>1 Outfeed Conveyor 2</b> (−1274, ClearConveyor).",
+    "Der negative Wert heißt: das Band fährt in die andere Richtung (Symbol ↰)."]},
+  {img:"s-tt1-korrektur", st:"TT1", t:"TT1 Drehtisch › Korrektur", s:[
+    "Tabelle mit <b>#</b>, <b>X▶</b>, <b>+/−</b> und <b>↻</b>: Zeile 1 – X▶ 1, +/− 0, Drehung <b>−90</b>.",
+    "Im Auswahlfeld (▼) den <b>Drehwinkel</b> wählen, z. B. −90°, 0° oder +90°. So liegen die Stapel richtig fürs Lagenmuster."]},
+  {img:"s-tt1-steuern", st:"TT1", t:"TT1 Drehtisch › Steuern", s:[
+    "<b>← →</b> Rollen fahren, <b>↓ ↑</b> Drehteller (Mitte) heben/senken, <b>↺ ↻</b> drehen.",
+    "Links und rechts Pfeil mit 🔗 = Ein- und Ausgang."]},
+  {img:"s-tt1-schritte", st:"TT1", t:"TT1 Drehtisch › Schrittliste", s:[
+    "<b>Infeed Conveyor 1</b> (1614): Stapel fährt auf den Tisch.",
+    "<b>1 Rotate −90°</b>: Tisch dreht den Stapel um 90°.",
+    "<b>2 Outfeed Conveyor 1</b> (1649): Stapel fährt weiter zu CV1."]},
+  {img:"s-cv1-steuern", st:"CV1", t:"CV1 Förderband 1 › Steuern", s:[
+    "Einfaches Band – deshalb nur die Reiter Steuern und Schrittliste, keine Korrektur.",
+    "<b>← →</b> fährt das Band, links und rechts Pfeil mit 🔗 = gekoppelt an TT1 und AC3."]},
+  {img:"s-cv1-schritte", st:"CV1", t:"CV1 Förderband 1 › Schrittliste", s:[
+    "<b>Infeed Conveyor 1</b> (1389) und <b>1 Outfeed Conveyor 1</b> (1389): Stapel einfahren und geradeaus weiterfördern (Symbol ←)."]},
+  {img:"s-ac3-korrektur", st:"AC3", t:"AC3 Winkelförderer 3 › Korrektur", s:["Gleiche Tabelle wie bei AC1: Zeile 1, X▶ = 1, +/− = 0."]},
   {img:"s-pal1-schritte", st:"PAL1", t:"PAL1 Palettierer › Schrittliste", s:[
     "Im Korrektur-Anlagenbild eine Station antippen – es öffnet sich ihr Fenster mit 3 Reitern: <b>Korrektur</b>, <b>Steuern</b>, <b>Schrittliste</b>.",
     "Die Schrittliste zeigt, was die Station bei jeder Lage macht. ▶ = aktueller Schritt. Beim PAL1: <b>0 Add Intermediate Layer</b> (Zwischenlage), <b>1 Infeed Conveyor 1</b> (Lage einfahren, 1464, SingleInfeed), <b>2 Move To Stack</b> (zum Stapel fahren), <b>3 Stack Layer</b> (Lage absetzen, 928 × 998 = Lagenmaß), <b>4 Palletiser Outfeed</b> (Palette raus).",
@@ -938,6 +990,9 @@ const GUIDE = [
     "AC1 und AC2 funktionieren genauso."]},
  ]},
 ];
+{ const F=["BS1","AC1","BS2","AC2","TT1","CV1","AC3","APC1","LI1","DIS1","PAL1","DIP1","CV2"], T=["korrektur","steuern","schritte"];
+  const tk = it => T.findIndex(t=>it.img.endsWith(t));
+  GUIDE[2].items.sort((a,b)=>F.indexOf(a.st)-F.indexOf(b.st) || tk(a)-tk(b)); }
 let guideSel = null;
 function viewGuide(v){
   if(guideSel){
