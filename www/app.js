@@ -71,6 +71,29 @@ const SECTIONS = [
     {k:"sp_kp1", l:"Kontrollpunkt 1", u:"mm", h:"Abstand zur Bogenvorderkante · Bildschirm: 150"},
     {k:"sp_kp2", l:"Kontrollpunkt 2", u:"mm", h:"Bildschirm: 1085"},
   ]},
+  {id:"pal", icon:"🧱", title:"Palettierer (Corrpal)", fields:[
+    {k:"pal_buendelh", l:"Bündelhöhe", u:"mm", h:"Auftrag › Allgemein · Bildschirm: 130"},
+    {k:"pal_lagen", l:"Lagenanzahl", u:"", h:"Bildschirm: 10"},
+    {k:"pal_eintrans", l:"Eintransport (Bündelmaß / Anordnung)", u:"", h:"z. B. 998 x 464, 2 Bündel", full:true, text:true},
+    {k:"pal_palette", l:"Palettenformat", u:"", h:"z. B. Europalette 800 x 1200 x 150", full:true, text:true},
+    {k:"pal_lagenformat", l:"Lagenformat / Muster", u:"", h:"z. B. 928 x 998, Muster 1", full:true, text:true},
+    {k:"pal_brecher1", l:"Zyklen Brecher 1", u:"", h:"Bildschirm: 1"},
+    {k:"pal_brecher2", l:"Zyklen Brecher 2", u:"", h:"Bildschirm: 1"},
+    {k:"pal_sammeln", l:"Vor Brechen nicht sammeln", u:"", h:"an / aus", full:true, text:true},
+    {k:"pal_zwbogen", l:"Zwischenbogen", u:"", h:"Keine / Alle / 1,3,5 / 2,4,6 / eigene", full:true, text:true},
+    {k:"pal_wenden", l:"Lage wenden", u:"", h:"Keine / Alle / 1,3,5 / 2,4,6", full:true, text:true},
+    {k:"pal_ausrichten", l:"Stapel ausrichten", u:"", h:"Keine / Alle / 1,3,5 / 2,4,6", full:true, text:true},
+    {k:"pal_schutzbogen", l:"Schutzbogen", u:"", h:"z. B. ganz / halb / Viertel", full:true, text:true},
+    {k:"pal_schutzmass", l:"Schutzbogenmaß", u:"mm", h:"Bildschirm: 0"},
+    {k:"pal_v_band", l:"Band", u:"%", h:"Geschwindigkeit · Bildschirm: 60"},
+    {k:"pal_a_band", l:"Band Beschleunigung", u:"%", h:"Bildschirm: 60"},
+    {k:"pal_v_dreh", l:"Drehung", u:"%", h:"Bildschirm: 60"},
+    {k:"pal_a_dreh", l:"Drehung Beschleunigung", u:"%", h:"Bildschirm: 60"},
+    {k:"pal_v_gabel", l:"Gabel", u:"%", h:"Bildschirm: 60"},
+    {k:"pal_a_gabel", l:"Gabel Beschleunigung", u:"%", h:"Bildschirm: 60"},
+    {k:"pal_v_lift", l:"Lift", u:"%", h:"Bildschirm: 60"},
+    {k:"pal_a_lift", l:"Lift Beschleunigung", u:"%", h:"Bildschirm: 60"},
+  ]},
 ];
 const JOB_TOGGLES = [
   {k:"einschub", l:"Einschub Automatik"},
@@ -375,7 +398,7 @@ function ocrPicker(img, W, H, hits, sec, j, done){
 }
 
 /* ===================== SCHICHT ===================== */
-const STOER_VORLAGEN = ["Greiferrandzerhacker AS geöffnet","Bogenableger Greiferrandzerhacker Sicherheitskreis","Stau","Doppelbogen","Bogen schief / nicht angelegt","Bogenablager voll","Werkzeug nachgerichtet","Ausbrechen hängt","Rüsten","Materialwechsel","Pause / Besprechung"];
+const STOER_VORLAGEN = ["Palettierer Stau","Zwischenbogen / Schutzbogen fehlt","Palette fehlt","Greiferrandzerhacker AS geöffnet","Bogenableger Greiferrandzerhacker Sicherheitskreis","Stau","Doppelbogen","Bogen schief / nicht angelegt","Bogenablager voll","Werkzeug nachgerichtet","Ausbrechen hängt","Rüsten","Materialwechsel","Pause / Besprechung"];
 const SCHICHTEN = ["Früh","Spät","Nacht"];
 function guessShift(){ const h = new Date().getHours(); return h>=6&&h<14 ? "Früh" : h>=14&&h<22 ? "Spät" : "Nacht"; }
 
@@ -574,6 +597,9 @@ const TOPICS = [
     <ul><li><b>NOT-HALT</b> (roter Pilz) stoppt sofort alles.</li><li>Nie in die Maschine greifen, solange sie nicht gesichert ist.</li><li>Meldungen wie „Greiferrandzerhacker Antriebsseite geöffnet“ bedeuten: eine Schutzeinrichtung ist offen – erst schließen, dann starten.</li><li>Beim Werkzeugwechsel Maschine sichern, wie im Betrieb vorgeschrieben.</li></ul>`},
 ];
 const QUIZ = [
+  {q:"Was macht der „Separator“ (BS1/BS2) am Palettierer?", o:["Er klebt Bogen","Er bricht die Bündel an den Haltepunkten in einzelne Nutzen-Stapel","Er zählt Paletten","Er wickelt Folie"], a:1, e:"Breaker/Separator = Brecher. „Zyklen Brecher 1/2“ stellst du im Auftrag ein."},
+  {q:"Wofür sind Zwischenbogen auf der Palette?", o:["Für die Optik","Für Stabilität beim Transport","Zum Zählen","Gegen Feuchtigkeit vom Boden"], a:1, e:"Zwischenbogen zwischen den Lagen halten die Palette zusammen."},
+  {q:"Bündelhöhe 138 mm, 10 Lagen – wie hoch ist der Stapel?", o:["138 mm","1380 mm","13,8 mm","1518 mm"], a:1, e:"138 × 10 = 1380 mm, plus Palette (z. B. 150 mm)."},
   {q:"Was bedeutet „Mada“ im Maschinen-Menü?", o:["Material-Datenbank","Maschinendaten – Grundeinstellungen je Aggregat","Manuelle Daten","Maßangaben"], a:1, e:"Mada = Maschinendaten. Nur mit Befugnis ändern."},
   {q:"Welche Farbe hat bei Drucktastern nach EN 60204-1 meist „Zurücksetzen/Quittieren“?", o:["Rot","Gelb","Blau","Grün"], a:2, e:"Blau steht für eine Handlung, die nötig ist – z. B. Reset nach dem Schließen einer Schutztür."},
   {q:"Wie hoch darf ein Bündel laut Mada maximal sein?", o:["100 mm","410 mm","1000 mm","50 mm"], a:1, e:"Min. 50 mm, max. 410 mm (Stand 19.11.)."},
@@ -594,6 +620,7 @@ function viewWissen(v){
   if(SUB === "quiz") return viewQuiz(v);
   if(SUB === "check") return viewCheck(v);
   if(SUB === "pulte") return viewPulte(v);
+  if(SUB === "pal") return viewPal(v);
   if(SUB === "fehler") return viewFehler(v);
   if(SUB && SUB.startsWith("fehler:")) return viewFehlerEdit(v, SUB.slice(7));
   if(SUB) return viewTopic(v, SUB);
@@ -601,12 +628,14 @@ function viewWissen(v){
     <div class="hero or"><div class="big">📖</div><small>Wissen & Schulung</small><h1>Die Stanze verstehen</h1>
       <p>Für dich und für Azubis – mit eigenen Notizen pro Thema.</p></div>
     <button class="btn" id="startQuiz" style="margin-bottom:12px">🎯 Quiz starten (${QUIZ.length} Fragen)${DB.quizBest?` · Bestwert ${DB.quizBest}/${QUIZ.length}`:""}</button>
+    <div class="item" id="goPal" style="border-left-color:#7b2fd1"><div class="t"><b>🧱 Palettierer Corrpal</b><small>Alle Stationen, Bildschirme, Auftragsfenster und Pult erklärt</small></div><div class="go">›</div></div>
     <div class="item" id="goPulte" style="border-left-color:var(--fox)"><div class="t"><b>🎛️ Bedienpulte &amp; Symbole</b><small>Jeder Knopf an den 3 Pulten erklärt – mit deinen Fotos</small></div><div class="go">›</div></div>
     <div class="item" id="goCheck" style="border-left-color:var(--green)"><div class="t"><b>✅ Rüst-Checkliste</b><small>Schritt für Schritt abhaken – für Azubis · ${DB.checkDone.length}/${DB.checklist.length} erledigt</small></div><div class="go">›</div></div>
     <div class="item" id="goFehler" style="border-left-color:var(--bad)"><div class="t"><b>🛠️ Fehlerbibliothek</b><small>Problem → Ursache → was hilft · ${DB.fehler.length} Einträge</small></div><div class="go">›</div></div>
     <h2>Themen</h2>
     ${TOPICS.map(t=>`<div class="item" data-id="${t.id}" style="border-left-color:var(--accent)"><div class="t"><b>${t.icon} ${t.title}</b>${DB.notes[t.id]?`<small>📝 eigene Notiz</small>`:""}</div><div class="go">›</div></div>`).join("")}`;
   v.querySelectorAll(".item[data-id]").forEach(el => el.onclick = () => { SUB = el.dataset.id; render(); scrollTo(0,0); });
+  v.querySelector("#goPal").onclick = () => { SUB="pal"; render(); scrollTo(0,0); };
   v.querySelector("#goPulte").onclick = () => { SUB="pulte"; render(); scrollTo(0,0); };
   v.querySelector("#goCheck").onclick = () => { SUB="check"; render(); scrollTo(0,0); };
   v.querySelector("#goFehler").onclick = () => { SUB="fehler"; render(); scrollTo(0,0); };
@@ -687,6 +716,67 @@ function viewPulte(v){
     const m = modal(`<h3>${esc(S[k].n)}</h3><p class="small" style="margin-bottom:8px">Was macht dieser Knopf bei euch wirklich?</p><textarea id="sn">${esc(DB.symNotes[k]||"")}</textarea><button class="btn" id="ok">Speichern</button><button class="btn light" data-close>Abbrechen</button>`);
     m.querySelector("#ok").onclick = () => { const t = m.querySelector("#sn").value.trim(); if(t) DB.symNotes[k]=t; else delete DB.symNotes[k]; save(); m.remove(); render(); toast("Gespeichert ✓"); };
   });
+}
+
+/* ---------- Palettierer Corrpal ---------- */
+const PAL_ST = [
+  {k:"BS1", n:"Separator 1 – Brecher 1", z:1, b:[84.5,47.9,14.1,23.1], d:"Hier kommt das Bündel von der Stanze an. Der Brecher bricht die gestanzten Bogen an den Haltepunkten (Nicks) auseinander, damit aus dem Bündel einzelne Nutzen-Stapel werden. Im Auftrag: „Zyklen Brecher 1“ = wie oft gebrochen wird."},
+  {k:"AC1", n:"Angle Conveyor 1 – Winkelförderer 1", z:1, b:[69,47,15.5,23.9], d:"Fördert die Stapel um 90° weiter (Richtungswechsel)."},
+  {k:"BS2", n:"Separator 2 – Brecher 2", z:1, b:[69.7,28.2,13.4,18.8], d:"Zweiter Brecher, bricht in die andere Richtung. Im Auftrag: „Zyklen Brecher 2“."},
+  {k:"AC2", n:"Angle Conveyor 2 – Winkelförderer 2", z:1, b:[70.4,0.9,14.1,27.4], d:"Nächster 90°-Richtungswechsel."},
+  {k:"TT1", n:"Turntable 1 – Drehtisch", z:2, b:[48.6,1.7,21.8,22.2], d:"Dreht Stapel, damit sie für das Lagenmuster richtig liegen. Geschwindigkeit im Produktionsbild: „Drehung“."},
+  {k:"CV1", n:"Conveyor Enhanced 1 – Förderband 1", z:2, b:[33.1,4.3,15.5,17.9], d:"Transportband zwischen Drehtisch und Lagenbildung. Geschwindigkeit: „Band“."},
+  {k:"AC3", n:"Angle Conveyor 3 – Winkelförderer 3", z:2, b:[16.2,4.3,16.9,18.8], d:"Dritter Richtungswechsel vor dem Lagenbilden."},
+  {k:"DIS1", n:"Dispenser Tie Sheet 1 – Zwischenbogen-Spender", z:3, b:[2.8,4.3,13,17.9], d:"Legt Zwischen- bzw. Schutzbogen ein. Zwischenbogen zwischen den Lagen machen die Palette stabiler für den Transport. Einstellung im Auftrag unter Optionen."},
+  {k:"APC1", n:"Align Pattering Conveyor 1 – Lagenbildung", z:2, b:[17.6,23.9,16.2,20.5], d:"Schiebt die Stapel zum Lagenmuster zusammen und richtet sie aus (Symbol ▶◀). Option „Stapel ausrichten“."},
+  {k:"LI1", n:"Layer Inverter 1 – Lagenwender", z:2, b:[19,44.4,15.5,18.8], d:"Kann eine ganze Lage wenden. Option „Lage wenden“ (Keine / Alle / 1,3,5 / 2,4,6)."},
+  {k:"PAL1", n:"Palletiser 1 – Palettierer", z:2, b:[19.7,63.2,16.2,35.9], d:"Setzt die Lagen mit Gabel und Lift auf die Palette, bis die Lagenanzahl erreicht ist. Geschwindigkeiten: „Gabel“ und „Lift“. Die Stapelhöhe ist bei den Soll-/Ist-Werten Achse 250."},
+  {k:"DIP1", n:"Dispenser Palletiser 1 – Paletten-Magazin", z:4, b:[0.7,39.3,19,59.8], d:"Hält leere Paletten bereit und gibt sie an den Palettierer ab."},
+  {k:"CV2", n:"Conveyor Enhanced 2 – Austransport", z:2, b:[35.9,83.8,21.8,15.4], d:"Fördert die volle Palette aus der Anlage."},
+];
+const ZONE_C = {1:"#3aa655", 2:"#3d7fd9", 3:"#a23fc4", 4:"#e08a1e"};
+let palSel = null;
+const PAL_PULT = [["palLampe",18.1,21.5],["steuerung",28.9,13.6],["nothalt",9,46.5],["einaus",24.7,52.2],["palEinschub",63.3,42],["schluessel",91.6,53.3]];
+S.palLampe = {n:"Leuchtmelder „NOT-HALT betätigt“", d:"Leuchtet rot, wenn irgendwo an der Anlage ein Not-Halt gedrückt ist. Den gedrückten Taster suchen (Bildschirm Sicherheit/Korrektur zeigt ihn), entriegeln, dann quittieren.", c:"✔"};
+S.palEinschub = {n:"Einschub / Automatik 0 / 1", d:"Gleiches Symbol wie am Anleger der Stanze: Zuführung aus/ein. Grüne LED = läuft (Status „Automatik Ein“).", c:"~"};
+function viewPal(v){
+  const st = palSel!=null ? PAL_ST[palSel] : null;
+  v.innerHTML = `<button class="back" id="back">‹ Wissen</button>
+    <div class="hero" style="background:linear-gradient(135deg,#7b2fd1,#3b3fc0)"><div class="big">🧱</div><small>Corrpal · Member of the Göpfert Group</small><h1>Palettierer</h1><p>Steht hinter der Stanze: bricht die Bündel, bildet Lagen und stapelt sie auf Paletten.</p></div>
+    <h2>Anlage <span>Tippe auf eine Station</span></h2>
+    <div class="card" style="padding:10px"><div style="position:relative;width:100%;padding-top:82%">
+      ${PAL_ST.map((x,i)=>`<button data-st="${i}" style="position:absolute;left:${x.b[0]}%;top:${x.b[1]}%;width:${x.b[2]}%;height:${x.b[3]}%;border:3px solid ${ZONE_C[x.z]};border-radius:8px;background:${palSel===i?"rgba(242,140,40,.45)":"rgba(140,210,160,.28)"};color:var(--text);font-weight:800;font-size:11px;padding:0">${x.k}</button>`).join("")}
+    </div>
+    <div class="small" style="margin-top:6px">Weg des Materials: BS1 → AC1 → BS2 → AC2 → TT1 → CV1 → AC3 → APC1 → LI1 → PAL1 → CV2. Rahmenfarben = Automatik-Bereiche 1–4 (oben rechts am Bildschirm).</div></div>
+    ${st?`<div class="card" id="stInfo" style="outline:3px solid var(--fox)"><b>${st.k} · ${esc(st.n)}</b><div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(st.d)}</div><div class="small" style="margin-top:6px">Automatik-Bereich ${st.z}</div></div>`:""}
+    <div class="card topic"><h3>🔄 Produktion</h3><ul>
+      <li><b>Jobdaten</b>: Kunde, Artikel, <b>Bündelhöhe (mm)</b></li>
+      <li><b>Stückzähler</b>: Lagen Soll/Ist, Paletten Soll/Ist</li>
+      <li><b>Geschwindigkeit</b> in % mit Beschleunigung: <b>Band</b>, <b>Drehung</b> (Drehtisch), <b>Gabel</b> und <b>Lift</b> (Palettierer)</li>
+      <li>Rechts: Bündelbild für <b>Eintransport</b> und <b>Austransport</b></li></ul>
+      <h3>⌖ Korrektur (Anlagenbild)</h3><ul>
+      <li>Alle Stationen mit Kürzel, grün = bereit. Türsymbole = Schutztüren, gelbe Ringe = Not-Halt, Schloss = verriegelte Tür.</li>
+      <li>Oben links <b>Automatik</b>, oben rechts die Bereiche <b>1–4</b> einzeln</li>
+      <li>Unten: <b>Räumen</b> (Anlage leerfahren), <b>Kein Schutzbogen</b>, <b>PAL Räumen</b> (Palettierer leeren), <b>Musterbogen</b>, <b>Reintegration</b>, <b>Abläufe stoppen</b></li></ul>
+      <h3>📂 Auftrag bearbeiten</h3><ul>
+      <li><b>Allgemein</b>: Bündelhöhe, Lagenanzahl → Stapelhöhe wird berechnet (z. B. 138 mm × 10 = 1380 mm), „Manuelle Eingabe“</li>
+      <li><b>Eintransport</b>: Bündelmaße (z. B. 998 × 464), Zyklen Brecher 1 und 2, „Vor Brechen nicht sammeln“</li>
+      <li><b>Austransport</b>: Lagenmuster aus Vorlagen, Palettenformat (Europalette 800 × 1200 × 150), Lagenformat</li>
+      <li><b>Optionen</b>: Zwischenbogen, Lage wenden, Stapel ausrichten, Schutzbogen + Schutzbogenmaß. Auswahl: Keine / Alle / 1,3,5 / 2,4,6 / eigene</li>
+      <li><b>Simulation</b>: Ablauf vorher am Bildschirm durchspielen ▶</li><li><b>Bemerkungen</b> und <b>Auftragshistorie</b> (Läufe, Menge, Zeit pro 100 Lagen)</li>
+      <li>Unten: <b>Berechnen</b>, <b>Speichern</b>, <b>In Liste setzen</b></li></ul>
+      <h3>🔧 Maschine</h3><ul>
+      <li><b>Soll-/Ist-Werte</b> je Aggregat, z. B. Achse 250 Stapelhöhe</li><li><b>Mada</b>: Module, Achsen, Tastermodule, Antriebe, Host Info</li>
+      <li><b>BDE</b> je Aggregat, <b>Wartung</b>: Speed Test, Bildschirm reinigen/kalibrieren</li>
+      <li><b>Diagnose › Kopplung</b>: Signale zwischen Stanze und Palettierer (Transfersystem: Release Outfeed, Request Outfeed …; PalletInfeed: Pallet Stack Running …). Grün = Signal aktiv. Hilft, wenn die Übergabe von der Stanze hängt.</li>
+      <li><b>Benutzer</b>: Operator (Bediener), mMaintenance/eMaintenance (Mechanik/Elektrik), IBN (Inbetriebnahme Göpfert), DEV (Entwicklung)</li></ul>
+      <div class="note">Die Stationsnamen stehen so in der Maschine (Mada/BDE). Die deutschen Erklärungen habe ich daraus abgeleitet – bei Abweichungen gilt die Betriebsanweisung.</div></div>
+    <h2>Pult am Palettierer</h2>
+    <div class="card" style="padding:8px"><div style="position:relative"><img src="img/pult-corrpal.jpg" style="width:100%;display:block;border-radius:12px">
+      ${PAL_PULT.map(([k,x,y],i)=>`<button data-ps="${k}" style="position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:${S[k].c==="✔"?"#1f9d55":S[k].c==="~"?"#2b6fde":"#7a7f8c"};color:#fff;font-weight:800;font-size:13px">${i+1}</button>`).join("")}</div></div>
+    ${PAL_PULT.map(([k],i)=>`<div class="card"><b>${i+1}. ${esc(S[k].n)}</b><div style="font-size:14px;line-height:1.45;margin-top:5px">${esc(S[k].d)}</div>${DB.symNotes&&DB.symNotes[k]?`<div class="small" style="margin-top:5px;color:var(--fox);font-weight:600">Bei uns: ${esc(DB.symNotes[k])}</div>`:""}</div>`).join("")}`;
+  v.querySelector("#back").onclick = () => { SUB=null; palSel=null; render(); };
+  v.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { palSel=+b.dataset.st; render(); document.getElementById("stInfo").scrollIntoView({behavior:"smooth", block:"center"}); });
 }
 
 /* ---------- Rüst-Checkliste ---------- */
@@ -772,11 +862,16 @@ function viewFehlerEdit(v, id){
   const d = v.querySelector("#delF"); if(d) d.onclick = () => confirmBox("Eintrag löschen?", () => { DB.fehler = DB.fehler.filter(x=>x!==f); save(); SUB="fehler"; render(); });
 }
 function seedExtras(){
+  if(!DB.seededPal){
+    DB.seededPal = true;
+    const j6 = DB.jobs.find(j=>j.artikel==="6026");
+    if(j6 && !j6.values.pal_buendelh) j6.values.pal_buendelh = "130";
+  }
   if(!DB.seeded6026){
     DB.seeded6026 = true;
     if(!DB.jobs.some(j=>j.artikel==="6026")) DB.jobs.push({id:uid(), kunde:"Seyfert", artikel:"6026", format:"630 x 1610", dicke:"2,4", speed:"3700", leerhuebe:"0", buendel:"52", einschub:true, bremsbuerste:true,
       notiz:"Werte von den Fotos vom 19.11.2026: Ist 3682/h, Ausstoß 3700/h, 25.437 Bogen gesamt.",
-      values:{st_spalt_as:"-1,19", st_druck:"195", st_tiegel:"194,0", au_band:"50", au_takt:"0,5", au_hoehe:"342"},
+      values:{st_spalt_as:"-1,19", st_druck:"195", st_tiegel:"194,0", au_band:"50", au_takt:"0,5", au_hoehe:"342", pal_buendelh:"130"},
       extra:{}, photos:[], history:[], ruestzeiten:[], created:Date.now(), updated:Date.now(), used:Date.now()-1000});
   }
   if(!Array.isArray(DB.fehler)) DB.fehler = FEHLER_DEFAULT.map(x=>({...x}));
@@ -816,7 +911,7 @@ function viewQuiz(v){
 }
 
 /* ===================== RECHNER ===================== */
-const calc = {soll:"", ist:"", aus:"", nutzen:"", bogen:"", stapelH:"", dicke:"", bpb:"", bdicke:"", bges:""};
+const calc = {soll:"", ist:"", aus:"", nutzen:"", bogen:"", stapelH:"", dicke:"", bpb:"", bdicke:"", bges:"", pbh:"", plag:"", pph:"150"};
 function viewRechner(v){
   v.innerHTML = `
     <div class="hero"><div class="big">🧮</div><small>Rechner</small><h1>Schnell gerechnet</h1><p>Restzeit, Nutzen und Stapel.</p></div>
@@ -838,6 +933,12 @@ function viewRechner(v){
       <label class="f"><span>Bogendicke</span><div class="unit"><input data-c="bdicke" inputmode="decimal" value="${esc(calc.bdicke)}" placeholder="2,4"><em>mm</em></div></label>
       <label class="f full"><span>Bogen gesamt (Auftrag)</span><input data-c="bges" inputmode="numeric" value="${esc(calc.bges)}"></label>
     </div><div id="r4"></div><div class="small">Grenzen laut Mada Bogenableger: 50–410 mm. Wellpappe federt – nur Richtwert.</div></div>
+    <h2>🧱 Palette (Corrpal)</h2>
+    <div class="card"><div class="grid">
+      <label class="f"><span>Bündelhöhe</span><div class="unit"><input data-c="pbh" inputmode="decimal" value="${esc(calc.pbh)}" placeholder="138"><em>mm</em></div></label>
+      <label class="f"><span>Lagen</span><input data-c="plag" inputmode="numeric" value="${esc(calc.plag)}" placeholder="10"></label>
+      <label class="f full"><span>Palettenhöhe</span><div class="unit"><input data-c="pph" inputmode="decimal" value="${esc(calc.pph)}" placeholder="150"><em>mm</em></div></label>
+    </div><div id="r5"></div></div>
     <h2>📏 Bogen im Stapel</h2>
     <div class="card"><div class="grid">
       <label class="f"><span>Stapelhöhe</span><div class="unit"><input data-c="stapelH" inputmode="decimal" value="${esc(calc.stapelH)}"><em>mm</em></div></label>
@@ -867,6 +968,8 @@ function viewRechner(v){
       r4 = `<div class="res">≈ ${fmt(h,0)} mm hoch</div><div class="small" style="color:${ok?"var(--ok)":"var(--bad)"};font-weight:600">${ok?"✓ passt in 50–410 mm":h<50?"⚠ unter 50 mm Mindesthöhe":"⚠ über 410 mm Maximalhöhe"}</div>`
         + (bg ? `<div class="small" style="margin-top:4px">${fmt(Math.ceil(bg/bpb))} Bündel${bg%bpb?` (letztes mit ${fmt(bg%bpb)} Bogen)`:""}</div>` : ""); }
     v.querySelector("#r4").innerHTML = r4;
+    const pbh=num(calc.pbh), plag=num(calc.plag), pph=num(calc.pph)||0;
+    v.querySelector("#r5").innerHTML = pbh && plag ? `<div class="res">${fmt(pbh*plag)} mm Stapel</div><div class="small">mit Palette ≈ ${fmt(pbh*plag+pph)} mm hoch${bpb?` · ≈ ${fmt(plag*bpb)} Bogen je Bündelspur`:""}</div>` : `<div class="small">Bündelhöhe und Lagen eintragen.</div>`;
     v.querySelector("#r3").innerHTML = sh&&d ? `<div class="res">≈ ${fmt(Math.floor(sh/d))} Bogen</div>` : "";
   };
   v.querySelectorAll("[data-c]").forEach(i => i.oninput = () => { calc[i.dataset.c] = i.value; upd(); });
