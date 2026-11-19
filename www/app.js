@@ -124,6 +124,7 @@ document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { TAB =
 function render(){
   if(typeof simStop==="function" && SUB!=="palsim") simStop();
   if(typeof gStopAnim==="function" && SUB!=="gsim") gStopAnim();
+  if(typeof gPalStop==="function") gPalStop();
   document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === TAB));
   const v = document.getElementById("view");
   ({ruesten:viewRuesten, schicht:viewSchicht, wissen:viewWissen, rechner:viewRechner})[TAB](v);
@@ -772,6 +773,28 @@ const GUIDE = [
     "Oben die Liste der geplanten Aufträge, der grüne ist ausgewählt. Mit den Pfeiltasten rechts die Reihenfolge ändern.",
     "Darunter suchen: Kunde, Artikel oder Auftrag ins Feld tippen, Trichter ✕ löscht den Filter.",
     "Rechts: <b>Positionieren</b> fährt die Maschine aufs Format des Auftrags, <b>Neuer Auftrag</b>, <b>Auftrag bearbeiten</b>, <b>Auftrag als Vorlage</b> (von einem ähnlichen Artikel starten), <b>Von Liste löschen</b>."]},
+  {img:"g-a-allgemein", t:"Auftrag bearbeiten › Allgemein", s:[
+    "Kunde, Artikel, Auftrag eintragen.",
+    "<b>Wellenmaß</b> und <b>Bogenmaß</b> (mm) vom Bogen eintragen – das ist das WPA-Maß auf der Laufkarte. <b>Bogendicke</b> dazu.",
+    "<b>Ableger</b> ist die Position im Bogenableger. Beim Artikel 1695 lag sie 25 mm unter dem Wellenmaß (743 → 718) und 20 mm unter dem Bogenmaß (1269 → 1249).",
+    "<b>Nutzen längs</b> × <b>Nutzen quer</b> = Nutzen pro Bogen (Laufkarte „Nutzen“). <b>Bündelstückzahl</b> = Bogen pro Bündel im Ableger.",
+    "<b>Speichern</b> oder <b>In Liste setzen</b>."]},
+  {img:"g-a-arf", t:"Auftrag bearbeiten › ARF", s:[
+    "ARF arbeitet mit <b>Druckmarken</b> auf dem Bogen (Lage: z. B. Unten), um den Bogen passgenau zum Druck auszurichten.",
+    "<b>Modus</b>: Aus, wenn ohne Druckmarken gestanzt wird. <b>Abstand Vorderkante</b>: wo die Marke sitzt.",
+    "<b>ARF Teachen</b> ankreuzen, damit die Maschine die Marke einlernt. <b>Preset</b> „Werte durch Teachen“, darunter die erkannte <b>Druckmarkenfarbe</b>."]},
+  {img:"g-a-werkzeuge", t:"Auftrag bearbeiten › Werkzeuge", s:[
+    "<b>Stanzdruck (t)</b> als Vorgabe, <b>Maß Klemmung oben/unten</b> (mm) für die Werkzeugklemmung.",
+    "Rechts die Skizze: die roten Kreuze sind die <b>Unterstützungsbalken</b>. Die Felder (z. B. −495 / 495, 155, 590) geben ihre Position an – so setzen, dass sie nicht unter Messern oder Ausbruch liegen.",
+    "<b>Unterstützungsbalken gekoppelt</b> grün = beide Seiten fahren gleich. ↻ dreht die Ansicht."]},
+  {img:"g-a-manuell", t:"Auftrag bearbeiten › Manuell", s:[
+    "Feinkorrektur von Hand, wenn Ausbrechen nicht genau passt:",
+    "<b>Handverstellung Ausbrechstation</b>: Register AS, Register BS (vor/zurück je Seite) und Seitenverstellung (quer).",
+    "<b>Handverstellung Abschlagbrett</b>: genauso fürs Abschlagbrett. Kleine Schritte, danach Probebogen prüfen."]},
+  {img:"g-a-bemerkungen", t:"Auftrag bearbeiten › Bemerkungen", s:["<b>Neue Bemerkung</b> für Hinweise zum Artikel, z. B. „Wölbung max. 10 mm“ oder Probleme beim letzten Lauf."]},
+  {img:"g-a-historie", t:"Auftrag bearbeiten › Auftragshistorie", s:[
+    "Alle Läufe mit Start, Ende, Zeit und Menge.",
+    "Statistik: Läufe, Menge gesamt, Menge pro Lauf und <b>Zeit pro 100 Nutzen</b> – gut zum Abschätzen, wie lange der Auftrag dauert."]},
   {img:"g-meldungen", t:"Meldungen", s:[
     "Meldung in der Liste antippen – rechts stehen die Details mit <b>Nr.</b> und <b>Schaltplan</b>-Stelle. Die beiden für den Elektriker notieren.",
     "Unten filtern: Fehler 🔺, Warnung ⚠️, Info ⓘ, Sicherheit 🛡️.",
@@ -965,7 +988,8 @@ function viewPal(v){
 }
 
 /* ---------- Stanze-Simulation: neuer Auftrag ---------- */
-let GJ = {kunde:"", artikel:"", format:"", dicke:"", speed:"3300", menge:"5000", bpb:"", anst:true};
+let GJ = {kunde:"", artikel:"", format:"", dicke:"", speed:"3300", menge:"5000", bpb:"", anst:true,
+  welle:"", bogen:"", nl:"", nq:"", zb:"", zl:"", stueck:"", stkStpl:"", stplPal:"4", palL:"1200", palB:"800", palH:"1700", dreh:false, zw:"alle", abdeck:true};
 let gTab = "ruesten", gDone = {}, gRun = null;
 const fmtParse = f => { const m = String(f||"").replace(/,/g,".").match(/(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)/i); return m ? [parseFloat(m[1]), parseFloat(m[2])] : null; };
 const mm = n => fmt(n, n%1?1:0);
@@ -983,6 +1007,17 @@ function gChecks(){
   if(bpb && d){ const h = bpb*d; out.push([h>=50&&h<=410?"ok":"bad",`Bündelhöhe ${mm(h)} mm (${fmt(bpb)} × ${GJ.dicke} mm) – erlaubt 50–410 mm.`]); }
   if(sp && me) out.push(["ok",`Laufzeit ohne Störungen: ca. ${durTxt(me/sp*3600e3)} für ${fmt(me)} Bogen.`]);
   if(bpb && me) out.push(["ok",`${fmt(Math.ceil(me/bpb))} Bündel${me%bpb?` (letztes mit ${fmt(me%bpb)} Bogen)`:""}.`]);
+  const W = num(GJ.welle), Bg = num(GJ.bogen), zb = num(GJ.zb), zl = num(GJ.zl), nl = num(GJ.nl), nq = num(GJ.nq);
+  if(nl && nq && num(GJ.stueck)) out.push(["ok",`${nl*nq} Nutzen pro Bogen → ${fmt(Math.ceil(num(GJ.stueck)/(nl*nq)))} Bogen für ${fmt(num(GJ.stueck))} Stück.`]);
+  if(W && Bg && zb && zl){
+    const fit = Math.max(Math.floor(W/zb)*Math.floor(Bg/zl), Math.floor(W/zl)*Math.floor(Bg/zb));
+    if(nl && nq) out.push([fit>=nl*nq?"ok":"bad",`Zuschnitt ${zb} × ${zl} passt ${fit}× in den Bogen ${W} × ${Bg} – eingetragen sind ${nl*nq} Nutzen.`]);
+  }
+  const P = gPalCalc();
+  if(P){ out.push([P.fits?"ok":"bad", `Palette: ${P.cols} × ${P.rows} Stapel${P.rot?" (gedreht)":""}, Lagenformat ${fmt(P.lw)} × ${fmt(P.lb)} mm auf ${fmt(P.L)} × ${fmt(P.B)} mm${P.fits?"":" – steht über!"}.`]);
+    if(P.h) out.push([P.h<=P.Hmax?"ok":"bad", `Palettenhöhe ca. ${fmt(P.h)} mm (Stapel ${fmt(P.stackH)} mm + Palette 150 mm) – erlaubt ${fmt(P.Hmax)} mm.`]);
+    if(P.lagenRest) out.push(["warn", `Stk/Stpl ${P.stk} ist kein Vielfaches der Bündelstückzahl ${P.bpb} – letzte Lage hat ${P.lagenRest} Stück.`]);
+    if(P.perPal && num(GJ.stueck)) out.push(["ok", `${fmt(P.perPal)} Stück pro Palette → ${fmt(Math.ceil(num(GJ.stueck)/P.perPal))} Paletten.`]); }
   const ex = DB.jobs.find(j => j.artikel && j.artikel===GJ.artikel);
   if(ex) out.push(["ok",`Artikel ${GJ.artikel} gibt es schon in Fox Stanze – Werte vom letzten Mal stehen bei den Schritten.`]);
   return out;
@@ -995,7 +1030,10 @@ function gSteps(){
   const val = (k, f) => V[k] ? `<b>${esc(V[k])}</b> ${src?`<span class="small">${src}</span>`:""}` : (f || "–");
   return [
     {img:"g-auftrag", t:"Auftrag anlegen", s:[`Auftrag › <b>Neuer Auftrag</b> (oder ähnlichen Artikel wählen › <b>Auftrag als Vorlage</b>).`,
-      `Eintragen: Kunde <b>${esc(GJ.kunde||"…")}</b>, Artikel <b>${esc(GJ.artikel||"…")}</b>, Format <b>${esc(GJ.format||"…")}</b>, Bogendicke <b>${esc(GJ.dicke||"…")} mm</b>.`, "Speichern."]},
+      `Eintragen: Kunde <b>${esc(GJ.kunde||"…")}</b>, Artikel <b>${esc(GJ.artikel||"…")}</b>, Bogendicke <b>${esc(GJ.dicke||"…")} mm</b>.`,
+      `Wellenmaß <b>${esc(GJ.welle||"…")}</b> → Ableger ${num(GJ.welle)?`Richtwert <b>${fmt(num(GJ.welle)-25)}</b> ${rw("− 25")}`:"…"}, Bogenmaß <b>${esc(GJ.bogen||"…")}</b> → Ableger ${num(GJ.bogen)?`Richtwert <b>${fmt(num(GJ.bogen)-20)}</b> ${rw("− 20")}`:"…"}`,
+      `Nutzen längs <b>${esc(GJ.nl||"…")}</b>, quer <b>${esc(GJ.nq||"…")}</b>, Bündelstückzahl <b>${esc(GJ.bpb||"…")}</b>.`,
+      "Reiter ARF (Druckmarken), Werkzeuge (Unterstützungsbalken), dann <b>Speichern</b>."]},
     {img:"g-auftrag", t:"Positionieren", s:["Auftrag in der Liste antippen (grün), dann <b>Positionieren</b>.", "Die Maschine fährt alle motorischen Achsen aufs Format. Warten, bis alles steht."]},
     {img:"g-anleger", t:"Anleger prüfen", s:[
       `Seitenführung AS/BS: ${ex&&V.anl_seitenf_as?val("anl_seitenf_as"):B?`Richtwert <b>±${mm(B/2)}</b> mm ${rw("halbe Breite")}`:"–"}`,
@@ -1017,7 +1055,7 @@ function gSteps(){
 }
 function viewGSim(v){
   gStopAnim();
-  const tabs = [["ruesten","1. Rüsten"],["prod","2. Produktion"]];
+  const tabs = [["ruesten","1. Rüsten"],["prod","2. Stanzen"],["pal","3. Palette"]];
   const checks = gChecks();
   v.innerHTML = `<button class="back" id="back">‹ Alle Artikel</button>
     <div class="hero"><div class="big">🎬</div><small>Göpfert G-Cut</small><h1>Neuen Auftrag simulieren</h1><p>Daten eingeben, Schritt für Schritt rüsten und die Produktion durchspielen.</p></div>
@@ -1029,8 +1067,22 @@ function viewGSim(v){
         <label class="f"><span>Bogendicke</span><div class="unit"><input data-g="dicke" inputmode="decimal" value="${esc(GJ.dicke)}" placeholder="1,2"><em>mm</em></div></label>
         <label class="f"><span>Geschwindigkeit</span><div class="unit"><input data-g="speed" inputmode="numeric" value="${esc(GJ.speed)}"><em>/h</em></div></label>
         <label class="f"><span>Menge (Bogen)</span><input data-g="menge" inputmode="numeric" value="${esc(GJ.menge)}"></label>
-        <label class="f full"><span>Bogen pro Bündel</span><input data-g="bpb" inputmode="numeric" value="${esc(GJ.bpb)}" placeholder="52"></label>
-      </div></div>
+        <label class="f full"><span>Bündelstückzahl (Bogen pro Bündel)</span><input data-g="bpb" inputmode="numeric" value="${esc(GJ.bpb)}" placeholder="75"></label>
+      </div>
+      <details class="sec" style="margin:4px 0 0;background:var(--bg)" ${GJ._lk?"open":""} id="lkBox"><summary>📄 Von der Laufkarte</summary><div class="body"><div class="grid">
+        <label class="f"><span>Wellenmaß</span><div class="unit"><input data-g="welle" inputmode="numeric" value="${esc(GJ.welle)}" placeholder="743"><em>mm</em></div></label>
+        <label class="f"><span>Bogenmaß</span><div class="unit"><input data-g="bogen" inputmode="numeric" value="${esc(GJ.bogen)}" placeholder="1269"><em>mm</em></div></label>
+        <label class="f"><span>Nutzen längs</span><input data-g="nl" inputmode="numeric" value="${esc(GJ.nl)}" placeholder="2"></label>
+        <label class="f"><span>Nutzen quer</span><input data-g="nq" inputmode="numeric" value="${esc(GJ.nq)}" placeholder="4"></label>
+        <label class="f"><span>Zuschnitt ZB</span><div class="unit"><input data-g="zb" inputmode="numeric" value="${esc(GJ.zb)}" placeholder="529"><em>mm</em></div></label>
+        <label class="f"><span>Zuschnitt ZL</span><div class="unit"><input data-g="zl" inputmode="numeric" value="${esc(GJ.zl)}" placeholder="389"><em>mm</em></div></label>
+        <label class="f full"><span>Fertigmenge (Stück Zuschnitte)</span><input data-g="stueck" inputmode="numeric" value="${esc(GJ.stueck)}" placeholder="10000"></label>
+        <label class="f"><span>Stk/Stpl</span><input data-g="stkStpl" inputmode="numeric" value="${esc(GJ.stkStpl)}" placeholder="590"></label>
+        <label class="f"><span>Stpl/Pal</span><input data-g="stplPal" inputmode="numeric" value="${esc(GJ.stplPal)}" placeholder="4"></label>
+        <label class="f"><span>Palette Länge</span><div class="unit"><input data-g="palL" inputmode="numeric" value="${esc(GJ.palL)}"><em>mm</em></div></label>
+        <label class="f"><span>Palette Breite</span><div class="unit"><input data-g="palB" inputmode="numeric" value="${esc(GJ.palB)}"><em>mm</em></div></label>
+        <label class="f full"><span>Max. Höhe mit Palette</span><div class="unit"><input data-g="palH" inputmode="numeric" value="${esc(GJ.palH)}"><em>mm</em></div></label>
+      </div><div class="small">Wenn Fertigmenge und Nutzen da sind, rechnet die App die Bogen-Menge selbst aus.</div></div></details></div>
     <h2>Prüfung</h2>
     <div class="card">${checks.length?checks.map(([k,t])=>`<div style="display:flex;gap:8px;margin:5px 0;font-size:14px;line-height:1.4"><span>${k==="ok"?"✅":k==="bad"?"⛔":"⚠️"}</span><span>${esc(t)}</span></div>`).join(""):`<div class="small">Daten eintragen …</div>`}</div>
     <div class="chips">${tabs.map(([k,l])=>`<button class="chip ${gTab===k?"on":""}" data-gt="${k}">${l}</button>`).join("")}</div>
@@ -1049,10 +1101,13 @@ function viewGSim(v){
     body.querySelectorAll("[data-zi]").forEach(im => im.onclick = () => zoomImg(`img/bs/${im.dataset.zi}.jpg`));
     body.querySelectorAll("[data-gd]").forEach(b => b.onclick = () => { gDone[b.dataset.gd] = !gDone[b.dataset.gd]; render(); });
     body.querySelector("#toProd").onclick = () => { gTab="prod"; render(); };
-  } else gProd(body);
+  } else if(gTab==="pal") gPalView(body); else gProd(body);
   v.querySelector("#back").onclick = () => { gStopAnim(); SUB=null; render(); scrollTo(0,0); };
   v.querySelectorAll("[data-gt]").forEach(b => b.onclick = () => { gTab=b.dataset.gt; render(); });
-  v.querySelectorAll("[data-g]").forEach(i => i.onchange = () => { GJ[i.dataset.g] = i.value.trim(); gRun=null; render(); });
+  v.querySelectorAll("[data-g]").forEach(i => i.onchange = () => { GJ[i.dataset.g] = i.value.trim(); GJ._lk = !!v.querySelector("#lkBox").open;
+    if(!GJ.format && num(GJ.welle) && num(GJ.bogen)) GJ.format = `${GJ.welle} x ${GJ.bogen}`;
+    const nu = (num(GJ.nl)||0)*(num(GJ.nq)||0); if(num(GJ.stueck) && nu) GJ.menge = String(Math.ceil(num(GJ.stueck)/nu));
+    gRun=null; gPal=null; render(); });
   v.querySelector("#gFrom").onchange = e => { const j = DB.jobs.find(x=>x.id===e.target.value); if(!j) return;
     Object.assign(GJ, {artikel:j.artikel, kunde:j.kunde||"", format:j.format||"", dicke:j.dicke||"", speed:j.speed||GJ.speed, bpb:j.buendel||""}); gRun=null; render(); };
   v.querySelector("#gSave").onclick = () => {
@@ -1060,9 +1115,125 @@ function viewGSim(v){
     const ex = DB.jobs.find(j=>j.artikel===GJ.artikel);
     if(ex){ openJob(ex.id); toast("Artikel gibt es schon – Rüstblatt geöffnet"); return; }
     const j = {id:uid(), kunde:GJ.kunde, artikel:GJ.artikel, format:GJ.format, dicke:GJ.dicke, speed:GJ.speed, leerhuebe:"", buendel:GJ.bpb, einschub:true, bremsbuerste:false,
-      notiz:"Aus der Simulation angelegt – Werte an der Maschine eintragen.", values:{}, extra:{}, photos:[], history:[], ruestzeiten:[], created:Date.now(), updated:Date.now(), used:Date.now()};
+      notiz:"Aus der Simulation angelegt – Werte an der Maschine eintragen.", values:gSaveVals(), extra:{}, photos:[], history:[], ruestzeiten:[], created:Date.now(), updated:Date.now(), used:Date.now()};
     j.history.push(snapshot(j)); DB.jobs.push(j); save(); openJob(j.id); toast("Rüstblatt angelegt ✓");
   };
+}
+
+/* ---------- Palettier-Simulation aus der Laufkarte ---------- */
+function gPalCalc(){
+  const zb = num(GJ.zb), zl = num(GJ.zl), n = num(GJ.stplPal)||0; if(!zb || !zl || !n) return null;
+  const L = num(GJ.palL)||1200, B = num(GJ.palB)||800, Hmax = num(GJ.palH)||1700;
+  const opts = [];
+  for(let c=1;c<=n;c++) if(n%c===0) for(const rot of [false,true]){
+    const r = n/c, w = rot?zl:zb, b = rot?zb:zl;
+    opts.push({cols:c, rows:r, rot, w, b, lw:c*w, lb:r*b, fits:c*w<=L && r*b<=B});
+  }
+  const pick = opts.filter(o=>o.rot===GJ.dreh).sort((a,b)=>(b.fits-a.fits) || (Math.max(a.lw-L,a.lb-B)-Math.max(b.lw-L,b.lb-B)))[0];
+  const stk = num(GJ.stkStpl)||0, bpb = num(GJ.bpb)||0, d = num(GJ.dicke)||0;
+  const lagen = stk && bpb ? Math.ceil(stk/bpb) : 0;
+  const stackH = stk && d ? stk*d : 0;
+  return Object.assign({}, pick, {L, B, Hmax, n, stk, bpb, lagen: lagen||1, lagenRest: stk&&bpb&&stk%bpb ? stk%bpb : 0,
+    stackH, h: stackH ? stackH+150 : 0, perPal: stk ? stk*n : 0});
+}
+let gPal = null, gPalTimer = null;
+function gPalStop(){ clearTimeout(gPalTimer); gPalTimer = null; }
+function gPalView(body){
+  const P = gPalCalc();
+  if(!P){ body.innerHTML = `<div class="card"><div class="small">Bitte unter „📄 Von der Laufkarte“ mindestens Zuschnitt ZB × ZL und Stpl/Pal eintragen – am besten auch Stk/Stpl, Bündelstückzahl und Bogendicke.</div></div>`; return; }
+  gPal ||= {i:0, tempo:3};
+  const steps = [];
+  steps.push({t:`Leere Palette ${fmt(P.L)} × ${fmt(P.B)} mm steht im Palettierer.`, lag:0, st:0});
+  for(let L=1; L<=P.lagen; L++){
+    for(let k=1;k<=P.n;k++) steps.push({t:`Lage ${L} von ${P.lagen}: Stapel ${k} von ${P.n} wird gesetzt${P.bpb?` (${L===P.lagen&&P.lagenRest?P.lagenRest:P.bpb} Stück)`:""}.`, lag:L, st:k});
+    if(L<P.lagen && simHit(GJ.zw, L)) steps.push({t:`Zwischenlage auf Lage ${L}.`, lag:L, st:P.n, zw:L});
+  }
+  if(GJ.abdeck) steps.push({t:"Abdeckbogen oben drauf.", lag:P.lagen, st:P.n, top:1});
+  steps.push({t:`Palette fertig: ${fmt(P.perPal||0)} Stück, ca. ${fmt(P.h||0)} mm hoch – Umreifung und Austransport.`, lag:P.lagen, st:P.n, top:GJ.abdeck, done:1});
+  gPal.i = Math.min(gPal.i, steps.length-1);
+  body.innerHTML = `<div class="card">
+      <div class="grid">
+        <label class="f"><span>Zwischenlagen</span><select id="gpZw">${SIM_OPTS.map(([o,l])=>`<option value="${o}" ${GJ.zw===o?"selected":""}>${l}</option>`).join("")}</select></label>
+        <div class="tog"><span>Abdeckbogen</span><label class="sw"><input type="checkbox" id="gpAb" ${GJ.abdeck?"checked":""}><span></span></label></div>
+        <div class="tog full"><span>Stapel um 90° gedreht</span><label class="sw"><input type="checkbox" id="gpRot" ${GJ.dreh?"checked":""}><span></span></label></div>
+      </div></div>
+    <div class="card" id="gpBox" style="padding:10px">
+      <div class="small" style="font-weight:700;margin-bottom:4px">Draufsicht – Palettierbild ${P.cols} × ${P.rows}${P.rot?" gedreht":""}</div>
+      <div id="gpTop"></div>
+      <div class="small" style="font-weight:700;margin:10px 0 4px">Seitenansicht</div>
+      <div id="gpSide"></div>
+      <div class="prog"><i id="gpProg"></i></div>
+      <div class="small" id="gpCnt"></div>
+      <div id="gpTxt" style="font-size:15px;line-height:1.4;min-height:42px;margin:6px 2px"></div>
+      <div class="row" style="gap:6px">
+        <button class="btn light sm" id="gpMinus" style="flex:none;width:44px">−</button><div class="small" style="text-align:center">Tempo ${gPal.tempo}/5</div>
+        <button class="btn light sm" id="gpPlus" style="flex:none;width:44px">+</button>
+        <button class="btn sm" id="gpPlay" style="flex:none;width:52px">▶</button>
+        <button class="btn light sm" id="gpStep" style="flex:none;width:52px">⏭</button>
+        <button class="btn light sm" id="gpReset" style="flex:none;width:52px">↺</button></div>
+    </div>
+    <button class="btn" id="gpCorr">🧱 Im Corrpal-Anlagenbild ansehen</button>`;
+  const $ = id => document.getElementById(id);
+  const draw = () => {
+    if(!$("gpBox")){ gPalStop(); return; }
+    const x = steps[gPal.i];
+    // Draufsicht (SVG im Maßstab)
+    const S = 300/Math.max(P.L, P.lw, 1), W = Math.max(P.L, P.lw)*S, H = Math.max(P.B, P.lb)*S;
+    const ox = (W - P.lw*S)/2, oy = (H - P.lb*S)/2, px = (W-P.L*S)/2, py = (H-P.B*S)/2;
+    let r = `<rect x="${px}" y="${py}" width="${P.L*S}" height="${P.B*S}" fill="#c89a5c" stroke="#8a6431" stroke-width="2" rx="3"/>`;
+    for(let k=0;k<P.n;k++){ const c = k%P.cols, ro = Math.floor(k/P.cols);
+      const on = x.lag>0 && (k < x.st || x.lag>1);
+      const cur = x.lag>0 && k===x.st-1 && !x.zw && !x.top && !x.done;
+      r += `<rect x="${ox+c*P.w*S+1}" y="${oy+ro*P.b*S+1}" width="${P.w*S-2}" height="${P.b*S-2}" fill="${on?(cur?"#f2a54a":"#f1dcae"):"none"}" stroke="${on?"#9c7a3f":"#9aa6bd"}" stroke-dasharray="${on?"":"4 3"}" rx="2"/>`;
+      r += `<text x="${ox+(c+.5)*P.w*S}" y="${oy+(ro+.5)*P.b*S+4}" text-anchor="middle" font-size="11" fill="#6b5428">${fmt(P.w)}×${fmt(P.b)}</text>`; }
+    if((x.zw || x.top) && !x.done) r += `<rect x="${ox}" y="${oy}" width="${P.lw*S}" height="${P.lb*S}" fill="${x.top?"rgba(43,111,222,.25)":"rgba(123,47,209,.22)"}"/>`;
+    if(x.done) [.3,.7].forEach(f => { r += `<line x1="${px+P.L*S*f}" y1="${py-4}" x2="${px+P.L*S*f}" y2="${py+P.B*S+4}" stroke="#16213f" stroke-width="3"/>`; r += `<line x1="${px-4}" y1="${py+P.B*S*f}" x2="${px+P.L*S+4}" y2="${py+P.B*S*f}" stroke="#16213f" stroke-width="3"/>`; });
+    if(!P.fits) r += `<rect x="${ox}" y="${oy}" width="${P.lw*S}" height="${P.lb*S}" fill="none" stroke="#d23b3b" stroke-width="2" stroke-dasharray="6 4"/>`;
+    $("gpTop").innerHTML = `<svg viewBox="-6 -6 ${W+12} ${H+12}" style="width:100%;max-height:230px;display:block;margin:auto">${r}</svg>`;
+    // Seitenansicht
+    const maxH = P.Hmax, sh = 190/maxH, lagH = P.stackH ? P.stackH/P.lagen : 1400/P.lagen;
+    const SW = 300, pw = P.L*SW/Math.max(P.L, P.lw);
+    let sv = `<line x1="0" y1="${200-maxH*sh}" x2="${SW}" y2="${200-maxH*sh}" stroke="#d23b3b" stroke-dasharray="5 4"/><text x="${SW}" y="${200-maxH*sh-3}" text-anchor="end" font-size="10" fill="#d23b3b">max ${fmt(maxH)} mm</text>`;
+    sv += `<rect x="${(SW-pw)/2}" y="${200-150*sh}" width="${pw}" height="${150*sh}" fill="#a0703c"/>`;
+    let y = 200-150*sh;
+    const full = x.lag>0 ? (x.st>=P.n || x.zw || x.top || x.done ? x.lag : x.lag-1) : 0;
+    const lw = P.lw*SW/Math.max(P.L, P.lw);
+    for(let L=1; L<=full + (x.lag>full?1:0); L++){
+      const part = L>full ? x.st/P.n : 1;
+      y -= lagH*sh;
+      sv += `<rect x="${(SW-lw)/2}" y="${y}" width="${lw*part}" height="${Math.max(1,lagH*sh-1)}" fill="${L>full?"#f2a54a":"#f1dcae"}" stroke="#b99a62" stroke-width=".6"/>`;
+      if(lagH*sh > 9) sv += `<text x="${SW/2}" y="${y+lagH*sh/2+3.5}" text-anchor="middle" font-size="9" fill="#6b5428">${L}</text>`;
+      const zwShown = simHit(GJ.zw, L) && L<P.lagen && (L<x.lag || (x.zw===L) || (L===x.lag && (x.top||x.done)));
+      if(zwShown){ y -= 2; sv += `<rect x="${(SW-lw)/2}" y="${y}" width="${lw}" height="2" fill="#7b2fd1"/>`; }
+    }
+    if(x.top){ y -= 3; sv += `<rect x="${(SW-lw)/2}" y="${y}" width="${lw}" height="3" fill="#2b6fde"/>`; }
+    if(x.done) [.3,.7].forEach(f => sv += `<line x1="${(SW-lw)/2+lw*f}" y1="${y}" x2="${(SW-lw)/2+lw*f}" y2="${200}" stroke="#16213f" stroke-width="2"/>`);
+    $("gpSide").innerHTML = `<svg viewBox="0 ${Math.min(0,y-10)} ${SW} ${200-Math.min(0,y-10)}" style="width:100%;max-height:230px;display:block">${sv}</svg>`;
+    $("gpProg").style.width = ((gPal.i+1)/steps.length*100)+"%";
+    $("gpCnt").textContent = `Schritt ${gPal.i+1} von ${steps.length} · Lage ${x.lag}/${P.lagen}`;
+    $("gpTxt").textContent = x.t;
+    $("gpPlay").textContent = gPalTimer ? "⏸" : "▶";
+  };
+  const tick = () => { if(!$("gpBox")){ gPalStop(); return; }
+    if(gPal.i >= steps.length-1){ gPalStop(); draw(); toast("Palette fertig ✓"); return; }
+    gPal.i++; draw(); gPalTimer = setTimeout(tick, [1300,900,550,300,120][gPal.tempo-1]); };
+  $("gpPlay").onclick = () => { if(gPalTimer){ gPalStop(); draw(); } else { if(gPal.i>=steps.length-1) gPal.i=0; gPalTimer = setTimeout(tick, 50); draw(); } };
+  $("gpStep").onclick = () => { gPalStop(); if(gPal.i<steps.length-1) gPal.i++; draw(); };
+  $("gpReset").onclick = () => { gPalStop(); gPal.i=0; draw(); };
+  $("gpMinus").onclick = () => { gPal.tempo=Math.max(1,gPal.tempo-1); gPalStop(); render(); };
+  $("gpPlus").onclick = () => { gPal.tempo=Math.min(5,gPal.tempo+1); gPalStop(); render(); };
+  $("gpZw").onchange = e => { GJ.zw = e.target.value; gPalStop(); gPal.i=0; render(); };
+  $("gpAb").onchange = e => { GJ.abdeck = e.target.checked; gPalStop(); gPal.i=0; render(); };
+  $("gpRot").onchange = e => { GJ.dreh = e.target.checked; gPalStop(); gPal.i=0; render(); };
+  $("gpCorr").onclick = () => { gPalStop(); Object.assign(SIMP, {lagen:Math.min(20,P.lagen), buendel:Math.min(6,P.n), zw:GJ.zw, schutz:GJ.abdeck}); TAB="wissen"; SUB="palsim"; render(); scrollTo(0,0); };
+  draw();
+}
+function gSaveVals(){
+  const P = gPalCalc(), V = {};
+  if(P){ if(P.stackH) V.pal_buendelh = fmt(P.bpb*(num(GJ.dicke)||0),0); V.pal_lagen = String(P.lagen);
+    V.pal_palette = `${fmt(P.L)} x ${fmt(P.B)}, max. ${fmt(P.Hmax)} mm hoch`; V.pal_lagenformat = `${fmt(P.lw)} x ${fmt(P.lb)}, ${P.cols} x ${P.rows}${P.rot?" gedreht":""}`;
+    V.pal_zwbogen = (SIM_OPTS.find(o=>o[0]===GJ.zw)||[])[1]||""; V.pal_schutzbogen = GJ.abdeck?"Abdeckbogen":""; }
+  return V;
 }
 /* Seitenansicht mit Animation */
 let gAnim = null;
