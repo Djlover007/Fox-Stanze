@@ -914,6 +914,9 @@ function viewPal(v){
   const st = palSel!=null ? PAL_ST[palSel] : null;
   v.innerHTML = `<button class="back" id="back">‹ Wissen</button>
     <div class="hero" style="background:linear-gradient(135deg,#7b2fd1,#3b3fc0)"><div class="big">🧱</div><small>Corrpal · Member of the Göpfert Group</small><h1>Palettierer</h1><p>Steht hinter der Stanze: bricht die Bündel, bildet Lagen und stapelt sie auf Paletten.</p></div>
+    <h2>📸 Bildschirme mit Fotos <span>${GUIDE[1].items.length} Seiten</span></h2>
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px">${GUIDE[1].items.map((it,ii)=>`<button data-pg="${ii}" style="flex:none;width:132px;border:0;background:var(--card);border-radius:14px;padding:6px;text-align:left;color:var(--text)"><img src="img/bs/${it.img}.jpg" style="width:120px;height:80px;object-fit:cover;border-radius:10px;display:block"><span style="display:block;font-size:12px;font-weight:700;margin-top:4px;line-height:1.25">${esc(it.t)}</span></button>`).join("")}</div>
+    <button class="btn" id="palGuide" style="margin-bottom:6px">📸 Alle Corrpal-Bildschirme Schritt für Schritt</button>
     <h2>Anlage <span>Tippe auf eine Station</span></h2>
     <div class="card" style="padding:10px"><div style="position:relative;width:100%;padding-top:82%">
       ${PAL_ST.map((x,i)=>`<button data-st="${i}" style="position:absolute;left:${x.b[0]}%;top:${x.b[1]}%;width:${x.b[2]}%;height:${x.b[3]}%;border:3px solid ${ZONE_C[x.z]};border-radius:8px;background:${palSel===i?"rgba(242,140,40,.45)":"rgba(140,210,160,.28)"};color:var(--text);font-weight:800;font-size:11px;padding:0">${x.k}</button>`).join("")}
@@ -947,6 +950,8 @@ function viewPal(v){
       ${PAL_PULT.map(([k,x,y],i)=>`<button data-ps="${k}" style="position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:${S[k].c==="✔"?"#1f9d55":S[k].c==="~"?"#2b6fde":"#7a7f8c"};color:#fff;font-weight:800;font-size:13px">${i+1}</button>`).join("")}</div></div>
     ${PAL_PULT.map(([k],i)=>`<div class="card"><b>${i+1}. ${esc(S[k].n)}</b><div style="font-size:14px;line-height:1.45;margin-top:5px">${esc(S[k].d)}</div>${DB.symNotes&&DB.symNotes[k]?`<div class="small" style="margin-top:5px;color:var(--fox);font-weight:600">Bei uns: ${esc(DB.symNotes[k])}</div>`:""}</div>`).join("")}`;
   v.querySelector("#back").onclick = () => { SUB=null; palSel=null; render(); };
+  v.querySelectorAll("[data-pg]").forEach(b => b.onclick = () => { SUB="guide"; guideSel=[1,+b.dataset.pg]; render(); scrollTo(0,0); });
+  v.querySelector("#palGuide").onclick = () => { SUB="guide"; guideSel=[1,0]; render(); scrollTo(0,0); };
   v.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { palSel=+b.dataset.st; render(); document.getElementById("stInfo").scrollIntoView({behavior:"smooth", block:"center"}); });
 }
 
