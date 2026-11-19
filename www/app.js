@@ -877,6 +877,66 @@ const GUIDE = [
   {img:"c-datum", t:"Maschine › Datum / Uhrzeit", s:[
     "Mit ▲ ▼ einstellen, <b>Speichern</b>. <b>Zurücksetzen</b> verwirft. Die Uhrzeit ist wichtig für Meldungen und BDE."]},
  ]},
+
+ {id:"stationen", t:"Corrpal Stationsfenster", icon:"🧩", items:[
+  {img:"s-pal1-schritte", st:"PAL1", t:"PAL1 Palettierer › Schrittliste", s:[
+    "Im Korrektur-Anlagenbild eine Station antippen – es öffnet sich ihr Fenster mit 3 Reitern: <b>Korrektur</b>, <b>Steuern</b>, <b>Schrittliste</b>.",
+    "Die Schrittliste zeigt, was die Station bei jeder Lage macht. ▶ = aktueller Schritt. Beim PAL1: <b>0 Add Intermediate Layer</b> (Zwischenlage), <b>1 Infeed Conveyor 1</b> (Lage einfahren, 1464, SingleInfeed), <b>2 Move To Stack</b> (zum Stapel fahren), <b>3 Stack Layer</b> (Lage absetzen, 928 × 998 = Lagenmaß), <b>4 Palletiser Outfeed</b> (Palette raus).",
+    "Unten: <b>Daten von Steuerung übernommen</b> grün = Werte kommen vom Auftrag. <b>Lage</b>, <b>Zurücksetzen</b> und <b>Ausführen</b> führen einen Schritt von Hand aus – nur wenn du weißt, was passiert, und nichts im Weg ist.",
+    "<b>Positionieren</b> fährt die Station aufs Auftragsformat, <b>Automatik</b> startet sie im Automatikbetrieb, <b>Schließen</b> schließt das Fenster."]},
+  {img:"s-pal1-steuern", st:"PAL1", t:"PAL1 Palettierer › Steuern", s:[
+    "3D-Bild des Palettierers: oben der Rahmen mit den <b>Gabelzinken</b>, auf denen die Lage kommt, die gelben Seitenanschläge und türkisen Ausrichter, unten der <b>Hubtisch</b> mit der Palette.",
+    "Ablauf: Lage fährt auf die Gabel, Anschläge richten sie aus, die Gabel zieht heraus und die Lage fällt auf den Stapel, der Hubtisch senkt um eine Lagenhöhe.",
+    "In diesem Reiter kann man Teile von Hand fahren (Handbetrieb). Vorher Bereich prüfen – niemand in der Anlage."]},
+  {img:"s-pal1-korrektur", st:"PAL1", t:"PAL1 Palettierer › Korrektur", s:[
+    "Oben links: <b>Zwischenlage</b> Keine / Alle / 1,3,5 / 2,4,6 / … (eigene Auswahl). Grün = gewählt.",
+    "Links an der Gabel <b>Stapel 1</b> und <b>2</b> (z. B. 928 / 923), unten auf der Palette (998 / 993): Maße der Anschläge für die Lage, mit − / + nachstellen, wenn die Lage nicht sauber liegt.",
+    "Rechts oben <b>Lagen Soll / Ist</b> und <b>Paletten Soll / Ist</b>. Darunter Korrekturen für die Ablage (Höhe/Versatz beim Absetzen) und den hinteren Anschlag (|←), meist 0."]},
+  {img:"s-dis1-schritte", st:"DIS1", t:"DIS1 Zwischenbogen-Spender › Schrittliste", s:[
+    "<b>0 Dispenser Pickup</b> (Sheet): Sauger nehmen einen Bogen vom Stapel.",
+    "<b>1 Dispenser Drop</b> (Sheet): Bogen wird abgelegt.",
+    "Läuft nur bei den Lagen, die bei Zwischenbogen eingestellt sind."]},
+  {img:"s-dis1-steuern", st:"DIS1", t:"DIS1 Zwischenbogen-Spender › Steuern", s:[
+    "Saugkreuz mit den grünen Saugern über dem Bogenstapel.",
+    "<b>↓ ↑</b> Saugkreuz senken/heben, Sauger-Tasten Vakuum an/aus, <b>← →</b> Wagen fahren (Position z. B. 1767).",
+    "Wenn kein Bogen kommt: Stapel leer? Sauger sauber und dicht?"]},
+  {img:"s-dis1-korrektur", st:"DIS1", t:"DIS1 Zwischenbogen-Spender › Korrektur", s:[
+    "Obere Reihe: in welche Lagen ein Zwischenbogen kommt – Keine / Alle / 1,3,5 / 2,4,6 / … (eigene).",
+    "Untere Reihe: Größe – <b>kein Bogen</b> (☒), <b>ganzer Bogen</b>, <b>zwei halbe</b>. Grün = gewählt.",
+    "Die Laufkarte sagt z. B. „mit Zwischenlagen“ – dann hier passend wählen."]},
+  {img:"s-li1-schritte", st:"LI1", t:"LI1 Lagenwender › Schrittliste", s:[
+    "<b>Infeed Conveyor 1</b> (1314, SingleInfeed): Lage fährt in die Trommel.",
+    "<b>1 Turn Over</b>: Trommel dreht – die Lage wird gewendet.",
+    "<b>2 Outfeed Conveyor 1</b> (ClearConveyor): Lage fährt raus. Wird nicht gewendet, läuft die Lage nur durch.",
+    "Oben links die drei Band-Symbole <b>− = +</b>: Bandgeschwindigkeit langsamer / normal / schneller."]},
+  {img:"s-li1-steuern", st:"LI1", t:"LI1 Lagenwender › Steuern", s:[
+    "Trommel mit zwei Bändern (oben/unten), dazwischen liegt die Lage.",
+    "<b>↕</b> Abstand der Bänder (Klemmung, z. B. 2), <b>↺ ↻</b> Trommel drehen, Pfeile auf dem Band = Band vor/zurück.",
+    "Die Ketten 🔗 oben und unten koppeln das Band an die Station davor bzw. danach."]},
+  {img:"s-li1-korrektur", st:"LI1", t:"LI1 Lagenwender › Korrektur", s:[
+    "<b>Lage wenden</b>: Keine / Alle / 1,3,5 / 2,4,6 / … – hier „Keine“.",
+    "Wenden z. B. jede zweite Lage, wenn die Bogen eine Wölbung haben – dann wird die Palette gerader.",
+    "Rechts oben <b>Lage</b>: aktuelle Lagennummer."]},
+  {img:"s-apc1-schritte", st:"APC1", t:"APC1 Lagenbildung › Schrittliste", s:[
+    "<b>0 FrontStop</b> (ShieldActive): Anschlag vorne fährt hoch.",
+    "<b>1 Infeed Conveyor 1</b> (1761): Stapel fahren ein.",
+    "<b>2 SidePusher</b> (998 / 1298): Seitenschieber schieben die Stapel auf das Lagenmaß zusammen.",
+    "<b>3 Add Intermediate Layer</b>: Zwischenlage. <b>4 FrontStop</b> (ShieldPassive): Anschlag runter. <b>5 Outfeed Conveyor 1</b> (928, ClearConveyor): fertige Lage fährt weiter."]},
+  {img:"s-apc1-steuern", st:"APC1", t:"APC1 Lagenbildung › Steuern", s:[
+    "Gelbe <b>Seitenwände</b> links/rechts (z. B. 649 / −649), mit ← → fahren, 🔗 = gekoppelt.",
+    "<b>↓ ↑</b> Frontanschlag senken/heben, schräge Pfeile = Band vor/zurück."]},
+  {img:"s-apc1-korrektur", st:"APC1", t:"APC1 Lagenbildung › Korrektur", s:[
+    "Rechts das <b>Lagenmaß</b>: Breite (z. B. 998) und Länge (1298) mit − / +. <b>0|I</b> schaltet das Ausrichten ein/aus.",
+    "Links: Versatz der Lage (z. B. 0) und das Symbol für Stapel ausrichten (grün = an).",
+    "Lage zu locker oder Stapel verrutschen: Maß etwas kleiner. Stapel werden gequetscht: etwas größer."]},
+  {img:"s-ac3-schritte", st:"AC3", t:"AC3 Winkelförderer › Schrittliste", s:[
+    "<b>Infeed Conveyor 1</b> (1409): Stapel fährt ein.",
+    "<b>1 Outfeed Conveyor 2</b> (−1334, ClearConveyor): Stapel fährt im 90°-Winkel über das zweite Band raus (Symbol ↲)."]},
+  {img:"s-ac3-steuern", st:"AC3", t:"AC3 Winkelförderer › Steuern", s:[
+    "Zwei Bänder: Längsriemen und Querrollen. Mit <b>↓ ↑</b> wird umgeschaltet, welches Band oben ist – so ändert sich die Richtung.",
+    "← → und schräge Pfeile fahren die Bänder. 🔗 koppelt an die Nachbarstation.",
+    "AC1 und AC2 funktionieren genauso."]},
+ ]},
 ];
 let guideSel = null;
 function viewGuide(v){
@@ -904,7 +964,7 @@ function viewGuide(v){
   v.innerHTML = `<button class="back" id="back">‹ Wissen</button>
     <div class="hero gr"><div class="big">📸</div><small>Bedienanleitung</small><h1>Bildschirm für Bildschirm</h1><p>Deine Fotos mit Schritt-für-Schritt-Erklärung. Kundennamen sind unkenntlich gemacht.</p></div>
     ${GUIDE.map((G,gi)=>`<h2>${G.icon} ${esc(G.t)} <span>${G.items.length} Seiten</span></h2>
-      ${G.items.map((it,ii)=>`<div class="item" data-g="${gi},${ii}" style="border-left-color:${gi?"#7b2fd1":"var(--accent)"}"><img src="img/bs/${it.img}.jpg" loading="lazy" style="width:72px;height:50px;object-fit:cover;border-radius:8px;flex:none"><div class="t"><b style="font-size:15px">${esc(it.t)}</b><small>${it.s.length} Schritte${DB.notes["g_"+it.img]?" · 📝":""}</small></div><div class="go">›</div></div>`).join("")}`).join("")}
+      ${G.items.map((it,ii)=>`<div class="item" data-g="${gi},${ii}" style="border-left-color:${["var(--accent)","#7b2fd1","var(--fox)"][gi]}"><img src="img/bs/${it.img}.jpg" loading="lazy" style="width:72px;height:50px;object-fit:cover;border-radius:8px;flex:none"><div class="t"><b style="font-size:15px">${esc(it.t)}</b><small>${it.s.length} Schritte${DB.notes["g_"+it.img]?" · 📝":""}</small></div><div class="go">›</div></div>`).join("")}`).join("")}
     <p class="small" style="margin:8px 4px">Die Erklärungen sind aus den Bildschirmen abgeleitet – bei Abweichungen gilt die Betriebsanweisung.</p>`;
   v.querySelector("#back").onclick = () => { SUB=null; render(); scrollTo(0,0); };
   v.querySelectorAll("[data-g]").forEach(el => el.onclick = () => { guideSel = el.dataset.g.split(",").map(Number); render(); scrollTo(0,0); });
@@ -947,13 +1007,15 @@ function viewPal(v){
     <h2>📸 Bildschirme mit Fotos <span>${GUIDE[1].items.length} Seiten</span></h2>
     <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px">${GUIDE[1].items.map((it,ii)=>`<button data-pg="${ii}" style="flex:none;width:132px;border:0;background:var(--card);border-radius:14px;padding:6px;text-align:left;color:var(--text)"><img src="img/bs/${it.img}.jpg" style="width:120px;height:80px;object-fit:cover;border-radius:10px;display:block"><span style="display:block;font-size:12px;font-weight:700;margin-top:4px;line-height:1.25">${esc(it.t)}</span></button>`).join("")}</div>
     <button class="btn fox" id="palSim">▶️ Simulation starten</button>
+    <button class="btn light" id="palSt">🧩 Stationsfenster erklärt (${GUIDE[2].items.length} Fotos)</button>
     <button class="btn" id="palGuide" style="margin-bottom:6px">📸 Alle Corrpal-Bildschirme Schritt für Schritt</button>
     <h2>Anlage <span>Tippe auf eine Station</span></h2>
     <div class="card" style="padding:10px"><div style="position:relative;width:100%;padding-top:82%">
       ${PAL_ST.map((x,i)=>`<button data-st="${i}" style="position:absolute;left:${x.b[0]}%;top:${x.b[1]}%;width:${x.b[2]}%;height:${x.b[3]}%;border:3px solid ${ZONE_C[x.z]};border-radius:8px;background:${palSel===i?"rgba(242,140,40,.45)":"rgba(140,210,160,.28)"};color:var(--text);font-weight:800;font-size:11px;padding:0">${x.k}</button>`).join("")}
     </div>
     <div class="small" style="margin-top:6px">Weg des Materials: BS1 → AC1 → BS2 → AC2 → TT1 → CV1 → AC3 → APC1 → LI1 → PAL1 → CV2. Rahmenfarben = Automatik-Bereiche 1–4 (oben rechts am Bildschirm).</div></div>
-    ${st?`<div class="card" id="stInfo" style="outline:3px solid var(--fox)"><b>${st.k} · ${esc(st.n)}</b><div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(st.d)}</div><div class="small" style="margin-top:6px">Automatik-Bereich ${st.z}</div></div>`:""}
+    ${st?`<div class="card" id="stInfo" style="outline:3px solid var(--fox)"><b>${st.k} · ${esc(st.n)}</b><div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(st.d)}</div><div class="small" style="margin-top:6px">Automatik-Bereich ${st.z}</div>
+      ${GUIDE[2].items.some(it=>it.st===st.k)?`<div style="display:flex;gap:8px;overflow-x:auto;margin-top:8px">${GUIDE[2].items.map((it,ii)=>it.st===st.k?`<button data-sg="${ii}" style="flex:none;width:110px;border:0;background:var(--chip);border-radius:12px;padding:5px;color:var(--text);text-align:left"><img src="img/bs/${it.img}.jpg" style="width:100px;height:68px;object-fit:cover;border-radius:8px;display:block"><span style="font-size:11px;font-weight:700">${esc(it.t.split("› ")[1])}</span></button>`:"").join("")}</div>`:`<div class="small" style="margin-top:6px">Für diese Station gibt es noch keine Fotos.</div>`}</div>`:""}
     <div class="card topic"><h3>🔄 Produktion</h3><ul>
       <li><b>Jobdaten</b>: Kunde, Artikel, <b>Bündelhöhe (mm)</b></li>
       <li><b>Stückzähler</b>: Lagen Soll/Ist, Paletten Soll/Ist</li>
@@ -982,6 +1044,8 @@ function viewPal(v){
     ${PAL_PULT.map(([k],i)=>`<div class="card"><b>${i+1}. ${esc(S[k].n)}</b><div style="font-size:14px;line-height:1.45;margin-top:5px">${esc(S[k].d)}</div>${DB.symNotes&&DB.symNotes[k]?`<div class="small" style="margin-top:5px;color:var(--fox);font-weight:600">Bei uns: ${esc(DB.symNotes[k])}</div>`:""}</div>`).join("")}`;
   v.querySelector("#back").onclick = () => { SUB=null; palSel=null; render(); };
   v.querySelectorAll("[data-pg]").forEach(b => b.onclick = () => { SUB="guide"; guideSel=[1,+b.dataset.pg]; render(); scrollTo(0,0); });
+  v.querySelectorAll("[data-sg]").forEach(b => b.onclick = () => { SUB="guide"; guideSel=[2,+b.dataset.sg]; render(); scrollTo(0,0); });
+  v.querySelector("#palSt").onclick = () => { SUB="guide"; guideSel=[2,0]; render(); scrollTo(0,0); };
   v.querySelector("#palSim").onclick = () => { SUB="palsim"; render(); scrollTo(0,0); };
   v.querySelector("#palGuide").onclick = () => { SUB="guide"; guideSel=[1,0]; render(); scrollTo(0,0); };
   v.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { palSel=+b.dataset.st; render(); document.getElementById("stInfo").scrollIntoView({behavior:"smooth", block:"center"}); });
@@ -1338,13 +1402,13 @@ function simBuild(){
       add("TT1", `${tag}: Drehtisch dreht die Stapel fürs Lagenmuster.`, {rot:1});
       add("CV1", `${tag}: Förderband 1.`);
       add("AC3", `${tag}: Winkelförderer 3.`);
-      add("APC1", `${tag}: wird in der Lagenbildung gesammelt.`, {coll:b});
+      add("APC1", `${tag}: Infeed Conveyor – wird in der Lagenbildung gesammelt (FrontStop oben).`, {coll:b});
     }
-    if(simHit(P.ausr, L)) add("APC1", `Lage ${L}: Stapel werden ausgerichtet (Stapel ausrichten).`, {coll:P.buendel});
-    if(simHit(P.wenden, L)) add("LI1", `Lage ${L}: Lagenwender wendet die ganze Lage.`, {flip:1});
+    if(simHit(P.ausr, L)) add("APC1", `Lage ${L}: SidePusher schiebt die Stapel aufs Lagenmaß zusammen (Stapel ausrichten).`, {coll:P.buendel});
+    if(simHit(P.wenden, L)) add("LI1", `Lage ${L}: Lagenwender – Infeed, Turn Over (Trommel dreht), Outfeed.`, {flip:1});
     else add("LI1", `Lage ${L}: läuft durch den Lagenwender (nicht gewendet).`);
-    add("PAL1", `Lage ${L}: Gabel und Lift setzen die Lage auf die Palette.`, {layer:{n:L, flip:simHit(P.wenden,L)}});
-    if(L < P.lagen && simHit(P.zw, L)) add("DIS1", `Zwischenbogen wird auf Lage ${L} gelegt.`, {zw:L});
+    add("PAL1", `Lage ${L}: Infeed auf die Gabel → Move To Stack → Stack Layer: Gabel zieht raus, Lage liegt auf der Palette.`, {layer:{n:L, flip:simHit(P.wenden,L)}});
+    if(L < P.lagen && simHit(P.zw, L)) add("DIS1", `Dispenser Pickup → Drop: Zwischenbogen wird auf Lage ${L} gelegt.`, {zw:L});
   }
   if(P.schutz) add("DIS1", "Schutzbogen wird oben auf den Stapel gelegt.", {top:1});
   add("CV2", `Palette fertig: ${P.lagen} Lagen – Austransport fördert sie aus der Anlage.`, {out:1});
