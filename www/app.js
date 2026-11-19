@@ -62,7 +62,7 @@ const SECTIONS = [
     {k:"bl_klappe", l:"Klappe / Neigung", u:"", h:"Bildschirm: 0,0"},
     {k:"bl_stapel", l:"Stapelhöhe", u:"", h:"Bildschirm: 100"},
   ]},
-  {id:"auslauf", icon:"➡️", title:"Auslauftransport", fields:[
+  {id:"auslauf", icon:"➡️", title:"Austransport", fields:[
     {k:"au_band", l:"Bandgeschwindigkeit", u:"", h:"Bildschirm: 50"},
     {k:"au_takt", l:"Zeit", u:"s", h:"Bildschirm: 0,5"},
     {k:"au_hoehe", l:"Höhe", u:"mm", h:"Bildschirm: 555"},
@@ -108,7 +108,7 @@ function render(){
 /* ===================== RÜSTEN ===================== */
 let jobFilter = "";
 const ALL_FIELDS = SECTIONS.flatMap(s => s.fields.map(f => Object.assign({sec:s.title}, f)));
-const JOB_BASE = [["artikel","Artikel"],["kunde","Kunde"],["format","Format"],["dicke","Bogendicke"],["speed","Geschwindigkeit"],["leerhuebe","Leerhübe"]];
+const JOB_BASE = [["artikel","Artikel"],["kunde","Kunde"],["format","Format"],["dicke","Bogendicke"],["speed","Geschwindigkeit"],["leerhuebe","Leerhübe"],["buendel","Bogen pro Bündel"]];
 function snapshot(j){
   return {t:Date.now(), values:Object.assign({}, j.values), base:Object.fromEntries(JOB_BASE.map(([k])=>[k,j[k]||""])),
     extra:JSON.parse(JSON.stringify(j.extra||{})), einschub:!!j.einschub, bremsbuerste:!!j.bremsbuerste};
@@ -189,6 +189,7 @@ function viewJob(v, id){
         <label class="f"><span>Bogendicke</span><div class="unit"><input id="j_dicke" inputmode="decimal" value="${esc(j.dicke)}"><em>mm</em></div></label>
         <label class="f"><span>Geschwindigkeit</span><div class="unit"><input id="j_speed" inputmode="numeric" value="${esc(j.speed)}"><em>/h</em></div></label>
         <label class="f"><span>Leerhübe</span><input id="j_leerhuebe" inputmode="numeric" value="${esc(j.leerhuebe)}"></label>
+        <label class="f full"><span>Bogen pro Bündel</span><input id="j_buendel" inputmode="numeric" value="${esc(j.buendel)}" placeholder="z. B. 52"></label>
       </div>
       ${JOB_TOGGLES.map(t => `<div class="tog"><span>${t.l}</span><label class="sw"><input type="checkbox" id="j_${t.k}" ${j[t.k]?"checked":""}><span></span></label></div>`).join("")}
     </div>
@@ -231,7 +232,7 @@ function viewJob(v, id){
     d.ontoggle = () => { const o = [...v.querySelectorAll("details.sec[open]")].map(x=>x.dataset.s); sessionStorage.setItem("open", JSON.stringify(o)); }; });
 
   const collect = () => {
-    ["artikel","kunde","format","dicke","speed","leerhuebe","notiz"].forEach(k => j[k] = v.querySelector("#j_"+k).value.trim());
+    ["artikel","kunde","format","dicke","speed","leerhuebe","buendel","notiz"].forEach(k => j[k] = v.querySelector("#j_"+k).value.trim());
     JOB_TOGGLES.forEach(t => j[t.k] = v.querySelector("#j_"+t.k).checked);
     v.querySelectorAll("[data-k]").forEach(i => { const val=i.value.trim(); if(val) j.values[i.dataset.k]=val; else delete j.values[i.dataset.k]; });
     v.querySelectorAll("[data-ex]").forEach(i => { j.extra[i.dataset.ex][+i.dataset.i][i.dataset.p] = i.value; });
@@ -374,7 +375,7 @@ function ocrPicker(img, W, H, hits, sec, j, done){
 }
 
 /* ===================== SCHICHT ===================== */
-const STOER_VORLAGEN = ["Greiferrandzerhacker AS geöffnet","Stau","Doppelbogen","Bogen schief / nicht angelegt","Bogenablager voll","Werkzeug nachgerichtet","Ausbrechen hängt","Rüsten","Materialwechsel","Pause / Besprechung"];
+const STOER_VORLAGEN = ["Greiferrandzerhacker AS geöffnet","Bogenableger Greiferrandzerhacker Sicherheitskreis","Stau","Doppelbogen","Bogen schief / nicht angelegt","Bogenablager voll","Werkzeug nachgerichtet","Ausbrechen hängt","Rüsten","Materialwechsel","Pause / Besprechung"];
 const SCHICHTEN = ["Früh","Spät","Nacht"];
 function guessShift(){ const h = new Date().getHours(); return h>=6&&h<14 ? "Früh" : h>=14&&h<22 ? "Spät" : "Nacht"; }
 
@@ -522,10 +523,61 @@ const TOPICS = [
     <ul><li><b>Steuerung Ein</b> – Steuerung läuft</li><li><b>Sicherheit OK</b> – Türen/Schutz zu, kein Not-Halt</li><li><b>Hauptmotor Ein</b> – Antrieb läuft</li><li><b>Einschub Ein</b> – Bogen werden eingezogen</li><li><b>Belegt</b> – Maschine ist belegt</li></ul>
     <p>Im Produktionsbild: <b>Gesamt</b> = gestanzte Bogen, <b>Geschwindigkeit</b> = Sollwert (bis 6500/h), <b>Ausstoß</b> = tatsächlich erreicht. <b>Leerhübe</b> = Hübe ohne Bogen, <b>Anstanzen</b> = einzelne Probebogen.</p>
     <p>Mit <b>Korrekturen speichern</b> sicherst du die Werte für den Artikel in der Maschine – in dieser App hast du sie zusätzlich auf dem Handy.</p>`},
+
+  {id:"gcut", icon:"🏭", title:"Eure Maschine: Göpfert G-Cut", html:`
+    <p>Göpfert baut seit 2019 genau eine Flachbettstanze: die <b>G-Cut</b>. Dazu passen eure Bildschirme mit max. 6500 Bogen/h, der Meldungsbereich „FDC“ (<i>Flatbed Die Cutter</i>) und der Bogenableger mit Bündeln. Eure Maschine ist also sehr wahrscheinlich eine G-Cut.</p>
+    <p><b>Laut Hersteller:</b></p>
+    <ul><li>Maschinengeschwindigkeit bis <b>6500 Bogen/h</b></li><li>Greiferrand einstellbar <b>11–18 mm</b>, motorisch</li><li>Schneidlinienhöhe <b>23,8 mm</b></li><li>Stanzdruck <b>450 oder 500 t</b> je nach Größe, Kniehebel-Technik</li>
+      <li>Schneidspalt (euer „Spalt“) wird per <b>Servo</b> reproduzierbar eingestellt</li><li>Stanzwerkzeug und Schneid-Gegenplatte werden <b>automatisch geklemmt</b></li>
+      <li>Zentralschmierung mit Drucküberwachung</li><li>Max. Bündelhöhe <b>400 mm</b></li>
+      <li>Anleger mit schwingender Saugplatte, motorische Seitenführungen, Vorder- und Hinteranschlag</li><li>Bündelableger mit Non-Stop-Gabeln, optional integrierter Greiferrandzerhacker</li></ul>
+    <div class="note">Quelle: Göpfert-Webseite zur G-Cut. Die genaue Ausführung bei Seyfert kann abweichen – Typenschild prüfen.</div>`},
+  {id:"bs_prod", icon:"🔄", title:"Bildschirm: Produktion", html:`
+    <ul><li><b>Jobdaten</b> – Kunde, Artikel, Format, Bogendicke des aktuellen Auftrags</li>
+      <li><b>Stückzahlen</b> – <i>Gesamt</i> = gestanzte Bogen, <i>Bündel/Stapel</i> = Bogen pro Bündel (z. B. 52). Mit dem Stift kannst du die Zähler ändern.</li>
+      <li><b>Geschwindigkeit</b> – oben der Ist-Wert (z. B. 3682), im Feld der Sollwert (z. B. 3700), Regler 0–6500</li>
+      <li><b>Ausstoß (Stck/h)</b> – was tatsächlich rauskommt</li>
+      <li><b>Funktionen</b> – Anstanzen, Einschub Automatik, ARF Teachen, Bremsbürste, Leerhübe. Grün = an.</li>
+      <li><b>Stanzung</b> – Spalt (mm), Druck (t), Position Tiegel (°)</li>
+      <li><b>Korrekturen speichern</b> – speichert deine Korrekturen zum Artikel in der Maschine</li>
+      <li>Unten das <b>Anlagenbild</b>: das blaue <b>i</b> zeigt, an welcher Station eine Meldung ansteht.</li></ul>`},
+  {id:"bs_korr", icon:"⌖", title:"Bildschirm: Korrektur", html:`
+    <p>Hier stellst du die einzelnen Stationen ein. Mit den Punkten unten blätterst du durch die Seiten: <b>Anleger, Austransport, Bogenableger, Ausbrechstation, Stanze, Stopperüberwachung</b>.</p>
+    <ul><li><b>△</b> vor einem Wert = Korrekturwert, den du mit Pfeilen oder +/− änderst</li><li><b>=</b> vor einem Wert = fester Sollwert</li>
+      <li><b>🔗 grün</b> = AS und BS gekoppelt</li><li><b>⏩| grün</b> = Achse fährt automatisch auf Formatposition</li></ul>
+    <p>Genau diese Seiten findest du in Fox Stanze im Rüstblatt wieder.</p>`},
+  {id:"bs_masch", icon:"🔧", title:"Bildschirm: Maschine (Mada & Co.)", html:`
+    <p>Oben die Reiter:</p>
+    <ul><li><b>Soll-/Ist-Werte</b> – Vergleich der Achsen</li><li><b>Mada</b> = <b>Maschinendaten</b>: Grundeinstellungen je Aggregat (Gesamtanlage, Anleger, Stanzaggregat, Ausbrechstation, Bogenableger)</li>
+      <li><b>Aufzeichnung</b>, <b>Diagnose</b> – für Fehlersuche</li><li><b>BDE</b> = Betriebsdatenerfassung (Laufzeiten, Stückzahlen, Stillstände)</li>
+      <li><b>Wartung</b> – Wartungsintervalle</li><li><b>Benutzer</b>, <b>Sprache</b>, <b>Datum/Uhrzeit</b></li></ul>
+    <p><b>Mada › Bogenableger</b> (Werte vom 19.11.):</p>
+    <ul><li>Bündel: Min. Bündelhöhe 50 mm, Max. Bündelhöhe 410 mm, Bündelhöhe Abwurf Zwischenmagazin 20 mm</li>
+      <li>Fettschmierung: aktiv 120 s, Pause 2400 min, Override 100 %</li><li>Weitere Gruppen: Allgemein (Blasluft Ein Default), Ölschmierung, Finger, Seitenausrichter, Backstop</li></ul>
+    <div class="note">Mada-Werte sind Grundeinstellungen der Maschine. Nur ändern, wenn du dazu befugt bist – Änderungen wirken auf alle Aufträge.</div>`},
+  {id:"bs_auftrag", icon:"📂", title:"Bildschirm: Auftrag", html:`
+    <ul><li>Oben die <b>Auftragsliste</b> (Pos., Kunde, Artikel, Auftrag, Stückzahl). Grün markiert = ausgewählt.</li>
+      <li>Darunter die <b>Suche/Filter</b> nach Kunde, Artikel oder Auftrag</li>
+      <li>Rechts <b>Ausgewählter Auftrag</b> mit Format, Bogendicke, Bemerkung</li>
+      <li>Knöpfe: <b>Positionieren</b> (Maschine fährt auf das Format), <b>Neuer Auftrag</b>, <b>Auftrag bearbeiten</b>, <b>Auftrag als Vorlage</b>, <b>Von Liste löschen</b></li></ul>
+    <p>Tipp: Wenn ein Artikel neu ist, mit „Auftrag als Vorlage“ von einem ähnlichen starten – genauso wie „Als neuen Artikel kopieren“ in Fox Stanze.</p>`},
+  {id:"bs_meld", icon:"⚠️", title:"Bildschirm: Meldungen", html:`
+    <ul><li>Liste mit Zeit und Meldungstext. Rechts die Details: Datum/Zeit, <b>Bereich</b> (z. B. FDC), <b>Nr.</b>, <b>Parameter</b>, <b>Symbol</b> und <b>Schaltplan</b>-Stelle (z. B. FDC|30,1|B30).</li>
+      <li>Filter unten: 🔺 Fehler · ⚠️ Warnung · ℹ️ Info · 🛡️ Sicherheit · ⚙️ Maschine, dazu Bereich (Gesamtanlage) und Ebene (Bediener)</li>
+      <li><b>Quittieren</b> bestätigt die Meldung, <b>Archiv</b> zeigt alte Meldungen, <b>Hilfe</b> und <b>Schaltplan</b> öffnen Infos zur Meldung</li></ul>
+    <div class="note">Für den Elektriker die <b>Nr.</b> und die <b>Schaltplan</b>-Angabe notieren – damit findet er den Sensor sofort. In Fox Stanze kannst du das bei der Störung mit eintragen.</div>`},
+  {id:"bs_sich", icon:"🛡️", title:"Bildschirm: Sicherheit", html:`
+    <ul><li>3D-Bild der ganzen Anlage mit allen <b>Schutztüren</b> (blaue Tür-Symbole) und <b>Not-Halt</b>-Tastern (gelbe Ringe). Eine offene Tür oder ein gedrückter Not-Halt wird dort angezeigt.</li>
+      <li>Oben rechts: Steuerung Ein / Sicherheit OK</li>
+      <li><b>Reintegration</b> – Anlagenteile nach dem Öffnen wieder in den Sicherheitskreis aufnehmen</li><li><b>Abläufe stoppen</b> – laufende automatische Abläufe anhalten</li><li><b>Drehen</b> – Ansicht drehen</li></ul>`},
   {id:"sicher", icon:"🛑", title:"Sicherheit", html:`
     <ul><li><b>NOT-HALT</b> (roter Pilz) stoppt sofort alles.</li><li>Nie in die Maschine greifen, solange sie nicht gesichert ist.</li><li>Meldungen wie „Greiferrandzerhacker Antriebsseite geöffnet“ bedeuten: eine Schutzeinrichtung ist offen – erst schließen, dann starten.</li><li>Beim Werkzeugwechsel Maschine sichern, wie im Betrieb vorgeschrieben.</li></ul>`},
 ];
 const QUIZ = [
+  {q:"Was bedeutet „Mada“ im Maschinen-Menü?", o:["Material-Datenbank","Maschinendaten – Grundeinstellungen je Aggregat","Manuelle Daten","Maßangaben"], a:1, e:"Mada = Maschinendaten. Nur mit Befugnis ändern."},
+  {q:"Welche Farbe hat bei Drucktastern nach EN 60204-1 meist „Zurücksetzen/Quittieren“?", o:["Rot","Gelb","Blau","Grün"], a:2, e:"Blau steht für eine Handlung, die nötig ist – z. B. Reset nach dem Schließen einer Schutztür."},
+  {q:"Wie hoch darf ein Bündel laut Mada maximal sein?", o:["100 mm","410 mm","1000 mm","50 mm"], a:1, e:"Min. 50 mm, max. 410 mm (Stand 19.11.)."},
+  {q:"Was hilft dem Elektriker bei einer Meldung am meisten?", o:["Uhrzeit","Meldungs-Nr. und Schaltplan-Angabe","Artikelnummer","Kundenname"], a:1, e:"Mit Nr. und Schaltplanstelle findet er den Sensor direkt."},
   {q:"Was bedeutet „AS“?", o:["Ausbrech-Station","Antriebsseite","Anleger-Sensor","Automatik-Start"], a:1, e:"AS = Antriebsseite, BS = Bedienseite."},
   {q:"Warum stehen bei der Seitenführung 634,0 und −634,0?", o:["Messfehler","Beide Seiten sind gekoppelt (🔗) und fahren gleich weit von der Mitte weg","Der Wert ist in Zoll","Die BS ist kaputt"], a:1, e:"Mit aktiver Kette bewegen sich AS und BS gemeinsam – gleicher Abstand, andere Richtung."},
   {q:"Der Bogen ist nicht durchgeschnitten. Was zuerst?", o:["Spalt in kleinen Schritten verringern","Druck sofort stark erhöhen","Geschwindigkeit auf 6500","Stopperüberwachung abschalten"], a:0, e:"Immer in kleinen Schritten zustellen – und prüfen, ob es nur eine Seite betrifft."},
@@ -541,6 +593,7 @@ let quiz = null;
 function viewWissen(v){
   if(SUB === "quiz") return viewQuiz(v);
   if(SUB === "check") return viewCheck(v);
+  if(SUB === "pulte") return viewPulte(v);
   if(SUB === "fehler") return viewFehler(v);
   if(SUB && SUB.startsWith("fehler:")) return viewFehlerEdit(v, SUB.slice(7));
   if(SUB) return viewTopic(v, SUB);
@@ -548,14 +601,92 @@ function viewWissen(v){
     <div class="hero or"><div class="big">📖</div><small>Wissen & Schulung</small><h1>Die Stanze verstehen</h1>
       <p>Für dich und für Azubis – mit eigenen Notizen pro Thema.</p></div>
     <button class="btn" id="startQuiz" style="margin-bottom:12px">🎯 Quiz starten (${QUIZ.length} Fragen)${DB.quizBest?` · Bestwert ${DB.quizBest}/${QUIZ.length}`:""}</button>
+    <div class="item" id="goPulte" style="border-left-color:var(--fox)"><div class="t"><b>🎛️ Bedienpulte &amp; Symbole</b><small>Jeder Knopf an den 3 Pulten erklärt – mit deinen Fotos</small></div><div class="go">›</div></div>
     <div class="item" id="goCheck" style="border-left-color:var(--green)"><div class="t"><b>✅ Rüst-Checkliste</b><small>Schritt für Schritt abhaken – für Azubis · ${DB.checkDone.length}/${DB.checklist.length} erledigt</small></div><div class="go">›</div></div>
     <div class="item" id="goFehler" style="border-left-color:var(--bad)"><div class="t"><b>🛠️ Fehlerbibliothek</b><small>Problem → Ursache → was hilft · ${DB.fehler.length} Einträge</small></div><div class="go">›</div></div>
     <h2>Themen</h2>
     ${TOPICS.map(t=>`<div class="item" data-id="${t.id}" style="border-left-color:var(--accent)"><div class="t"><b>${t.icon} ${t.title}</b>${DB.notes[t.id]?`<small>📝 eigene Notiz</small>`:""}</div><div class="go">›</div></div>`).join("")}`;
   v.querySelectorAll(".item[data-id]").forEach(el => el.onclick = () => { SUB = el.dataset.id; render(); scrollTo(0,0); });
+  v.querySelector("#goPulte").onclick = () => { SUB="pulte"; render(); scrollTo(0,0); };
   v.querySelector("#goCheck").onclick = () => { SUB="check"; render(); scrollTo(0,0); };
   v.querySelector("#goFehler").onclick = () => { SUB="fehler"; render(); scrollTo(0,0); };
   v.querySelector("#startQuiz").onclick = () => { quiz = {i:0, score:0, order:[...QUIZ.keys()].sort(()=>Math.random()-.5), done:false, ans:null}; SUB="quiz"; render(); scrollTo(0,0); };
+}
+
+/* ---------- Bedienpulte / Symbol-Lexikon ---------- */
+/* Positionen in Prozent des Bildes. sicher: ✔ = eindeutig, ~ = wahrscheinlich, ? = unsicher – bitte vor Ort prüfen */
+const S = {
+  nothalt:{n:"NOT-HALT", d:"Roter Pilz auf gelbem Grund: stoppt sofort alles. Zum Entriegeln drehen. Danach Sicherheit quittieren.", c:"✔"},
+  motor:{n:"Hauptantrieb Aus / Ein", d:"Motor-Symbol. Roter Taster = Aus/Stopp, weißer Leuchttaster = Ein. Leuchtet weiß, wenn der Hauptmotor läuft (Status „Hauptmotor Ein“).", c:"~"},
+  motorAus:{n:"Hauptantrieb Aus", d:"Motor-Symbol mit nur rotem Taster: Antrieb stoppen. Leuchtet rot, solange der Antrieb aus ist.", c:"~"},
+  tippen:{n:"Tippen / Einrichten", d:"Hand mit Bewegungspfeilen: Maschine bewegt sich nur, solange du drückst (Tippbetrieb, z. B. beim Einrichten).", c:"~"},
+  tiegel:{n:"Tiegel 0° / 180°", d:"Wahlschalter für die Tiegelstellung bzw. Drehrichtung des Hauptantriebs: 0° (Tiegel auf) / 180° (Tiegel zu). Die aktuelle Stellung siehst du im Produktionsbild als „Position Tiegel (°)“.", c:"~"},
+  tueren:{n:"Schutztüren / Seitenführungen auf–zu", d:"Zwei Felder mit Pfeilen zueinander/auseinander. Wahrscheinlich Schiebetüren bzw. Seitenführungen öffnen/schließen.", c:"?"},
+  geblaese:{n:"Gebläse / Luft", d:"Lüfterrad mit Pfeil: Gebläse bzw. Saug-/Blasluft ein (z. B. Anleger-Saugplatte, „Blasluft“ in der Mada).", c:"~"},
+  einschub:{n:"Einschub 0 / 1", d:"Bogenstapel mit Band, 0/1: Bogeneinschub aus/ein. Grüne LED = Einschub läuft (Status „Einschub Ein“), rote LED = aus.", c:"✔"},
+  haube:{n:"Haube / Rahmen heben–senken", d:"Rahmen mit Pfeilen hoch/runter. Wahrscheinlich Schutzhaube oder Werkzeugrahmen heben/senken.", c:"?"},
+  buendelAus:{n:"Bündel ausschieben", d:"Stapel mit Pfeil: fertiges Bündel aus dem Bogenableger schieben.", c:"?"},
+  seitenausr:{n:"Seitenausrichter auf / zu", d:"Stapel zwischen zwei Wänden mit Pfeilen: Seitenausrichter im Bogenableger (Mada: „Seitenausrichter“).", c:"~"},
+  fingerHoch:{n:"Finger / Gabel heben–senken", d:"Rechen mit Pfeilen hoch/runter: Non-Stop-Finger bzw. Gabel im Bogenableger (Mada: „Finger“).", c:"~"},
+  fingerVor:{n:"Finger / Gabel vor–zurück", d:"Rechen mit Pfeilen links/rechts: Finger bzw. Gabel ein- und ausfahren.", c:"~"},
+  fingerAus:{n:"Finger / Gabel einfahren", d:"Rechen mit Pfeil nach rechts: Finger in den Stapel einfahren (Non-Stop-Wechsel).", c:"?"},
+  zyklus:{n:"Automatik / Zyklus", d:"Zwei Pfeile im Kreis: automatischen Ablauf starten bzw. quittieren.", c:"?"},
+  backstop:{n:"Backstop / Niederhalter", d:"T-Symbol mit Pfeilen: wahrscheinlich Backstop (Mada: „Backstop“) bzw. Anschlag hinten.", c:"?"},
+  zwmag:{n:"Zwischenmagazin vor–zurück", d:"Zweiter Rechen: wahrscheinlich Zwischenmagazin (Mada: „Bündelhöhe Abwurf Zwischenmagazin“).", c:"?"},
+  zwmagAus:{n:"Zwischenmagazin ausfahren", d:"Zweiter Rechen mit Pfeil: Zwischenmagazin abwerfen/ausfahren.", c:"?"},
+  werkzeug:{n:"Stanzwerkzeug klemmen / lösen", d:"Werkzeug mit Schloss zu/offen. Die G-Cut klemmt das Stanzwerkzeug automatisch.", c:"~"},
+  platte:{n:"Schneidplatte klemmen / lösen", d:"Schloss über einem Balken: Schneid-Gegenplatte klemmen/lösen (bei der G-Cut automatisch).", c:"~"},
+  steuerung:{n:"Steuerung / Schaltschrank", d:"Schaltschrank-Symbol, leuchtet weiß: Steuerspannung liegt an (Status „Steuerung Ein“).", c:"~"},
+  einaus:{n:"0 / I – Aus / Ein", d:"Roter Taster 0 = Aus, grüner Taster I = Ein, z. B. für die Steuerung bzw. diesen Anlagenteil.", c:"~"},
+  quitt:{n:"Sicherheit quittieren", d:"Tür mit Haken, blauer Leuchttaster: nach dem Schließen der Schutztüren den Sicherheitskreis zurücksetzen. Blau heißt nach EN 60204-1 „Handlung nötig“.", c:"~"},
+  schluessel:{n:"Schlüsselschalter 0 → I", d:"Schlüssel: Sonderbetriebsart, z. B. Einrichten. Nur für befugte Personen.", c:"~"},
+  arm:{n:"Arm / Saugplatte heben–senken", d:"Bewegtes Teil mit Pfeilen hoch/runter. Wahrscheinlich Saugplatte oder Zuführarm.", c:"?"},
+  bandHoch:{n:"Band heben–senken", d:"Band mit Pfeilen hoch/runter.", c:"?"},
+  bandVor:{n:"Band vor–zurück", d:"Band mit Pfeilen links/rechts.", c:"?"},
+  motorPM:{n:"Geschwindigkeit − / +", d:"Motor mit − und +: Geschwindigkeit dieses Teils langsamer/schneller.", c:"~"},
+  geblPM:{n:"Gebläse − / +", d:"Lüfter mit − und +: Luftleistung weniger/mehr.", c:"~"},
+  rampePM:{n:"Neigung / Höhe − / +", d:"Keil mit − und +: Neigung bzw. Höhe verstellen.", c:"?"},
+  abstand:{n:"Abstand / Breite verstellen", d:"Band mit Doppelpfeil: Abstand bzw. Breite verstellen.", c:"?"},
+};
+const PULTE = [
+  {id:"haupt", t:"Hauptpult (unter dem Bildschirm)", img:"img/pult-haupt.jpg", dx:7, dy:3, pts:[
+    ["nothalt",7,12],["motor",28.6,9.3],["tippen",52.4,10],["tiegel",76.5,10],["tueren",12,41.3],["geblaese",52.1,42.7],["einschub",72.3,42.7],["haube",93.7,42.7],
+    ["buendelAus",17.2,68],["seitenausr",34.7,68],["fingerHoch",52.4,68.7],["fingerVor",69.6,68.7],["fingerAus",86.8,69],["zyklus",21.1,85.7],["backstop",37.1,85.7],["zwmag",66.6,86.7],["zwmagAus",82.3,86.7]]},
+  {id:"stanze", t:"Pult an der Stanze", img:"img/pult-stanze.jpg", dx:6.5, dy:6, pts:[
+    ["nothalt",13.9,27.8],["motorAus",35.9,25.3],["werkzeug",54.6,25.3],["tiegel",36.5,68],["platte",54.2,67.5],["haube",72.6,67.5]]},
+  {id:"drei", t:"Drittes Pult (bitte Ort eintragen)", img:"img/pult-drei.jpg", dx:5.2, dy:3.5, pts:[
+    ["nothalt",8.4,16.3],["steuerung",24.4,12.2],["einaus",27.4,40.7],["motor",40.1,12.2],["tippen",55.8,13],["tiegel",72.3,13],["quitt",88.6,12.2],
+    ["geblaese",42.2,41.5],["einschub",55.5,41.9],["arm",69.9,41.9],["schluessel",84.4,41.9],
+    ["zyklus",17.5,65.4],["motor",29.5,66.3],["geblaese",42.2,66.3],["einschub",54.9,66.3],["bandHoch",67.5,66.3],["bandVor",80.8,65.9],
+    ["motorPM",32.2,83.7],["geblPM",42.8,83.7],["rampePM",66.9,83.7],["abstand",77.8,83.7]]},
+];
+let pultSel = "haupt", symSel = null;
+function viewPulte(v){
+  DB.symNotes ||= {}; DB.pultNames ||= {};
+  const P = PULTE.find(x=>x.id===pultSel);
+  v.innerHTML = `<button class="back" id="back">‹ Wissen</button>
+    <div class="chips">${PULTE.map(x=>`<button class="chip ${x.id===pultSel?"on":""}" data-p="${x.id}">${esc(DB.pultNames[x.id]||x.t.split(" (")[0])}</button>`).join("")}</div>
+    <div class="card" style="padding:8px"><div style="position:relative">
+      <img src="${P.img}" style="width:100%;display:block;border-radius:12px">
+      ${P.pts.map(([k,x,y],i)=>`<button data-s="${i}" style="position:absolute;left:${x-(P.dx||0)}%;top:${y-(P.dy||0)}%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:${symSel===i?"var(--fox)":S[k].c==="✔"?"#1f9d55":S[k].c==="~"?"#2b6fde":"#7a7f8c"};color:#fff;font-weight:800;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,.5)">${i+1}</button>`).join("")}
+    </div>
+    <div class="small" style="margin:8px 4px 2px">Tippe auf eine Nummer. <span style="color:#1f9d55">●</span> sicher · <span style="color:#2b6fde">●</span> wahrscheinlich · <span style="color:#7a7f8c">●</span> unsicher – bitte prüfen</div></div>
+    ${pultSel==="drei"?`<div class="card"><label class="f" style="margin:0"><span>Wo hängt dieses Pult?</span><input id="pname" value="${esc(DB.pultNames.drei||"")}" placeholder="z. B. Anleger Bedienseite"></label></div>`:""}
+    <div id="legend">${P.pts.map(([k],i)=>{ const y=S[k], note=DB.symNotes[k]||"";
+      return `<div class="card" id="sym${i}" style="${symSel===i?"outline:3px solid var(--fox)":""}"><div class="row"><b style="flex:1">${i+1}. ${esc(y.n)}</b><span class="tag" style="flex:none">${y.c==="✔"?"sicher":y.c==="~"?"wahrscheinlich":"unsicher"}</span></div>
+        <div style="font-size:14px;line-height:1.45;margin:6px 0">${esc(y.d)}</div>
+        ${note?`<div class="note" style="background:rgba(242,140,40,.13);border-left:4px solid var(--fox);padding:8px 10px;border-radius:10px;font-size:14px"><b>Bei uns:</b> ${esc(note)}</div>`:""}
+        <button class="chip" data-n="${k}" style="margin-top:6px">✏️ ${note?"Ändern":"So ist es bei uns"}</button></div>`; }).join("")}</div>
+    <p class="small" style="margin:6px 4px">Die Bedeutungen sind aus den Symbolen, den Bildschirmtexten und der Norm EN 60204-1 abgeleitet. Eine Bedienungsanleitung von Göpfert gibt es öffentlich nicht – im Zweifel gilt die Betriebsanweisung. Deine Korrekturen gelten für das Symbol auf allen Pulten.</p>`;
+  v.querySelector("#back").onclick = () => { SUB=null; symSel=null; render(); };
+  v.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { pultSel=b.dataset.p; symSel=null; render(); });
+  v.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { symSel=+b.dataset.s; render(); document.getElementById("sym"+symSel).scrollIntoView({behavior:"smooth", block:"center"}); });
+  const pn = v.querySelector("#pname"); if(pn) pn.onchange = () => { DB.pultNames.drei = pn.value.trim(); save(); render(); };
+  v.querySelectorAll("[data-n]").forEach(b => b.onclick = () => {
+    const k = b.dataset.n;
+    const m = modal(`<h3>${esc(S[k].n)}</h3><p class="small" style="margin-bottom:8px">Was macht dieser Knopf bei euch wirklich?</p><textarea id="sn">${esc(DB.symNotes[k]||"")}</textarea><button class="btn" id="ok">Speichern</button><button class="btn light" data-close>Abbrechen</button>`);
+    m.querySelector("#ok").onclick = () => { const t = m.querySelector("#sn").value.trim(); if(t) DB.symNotes[k]=t; else delete DB.symNotes[k]; save(); m.remove(); render(); toast("Gespeichert ✓"); };
+  });
 }
 
 /* ---------- Rüst-Checkliste ---------- */
@@ -641,6 +772,13 @@ function viewFehlerEdit(v, id){
   const d = v.querySelector("#delF"); if(d) d.onclick = () => confirmBox("Eintrag löschen?", () => { DB.fehler = DB.fehler.filter(x=>x!==f); save(); SUB="fehler"; render(); });
 }
 function seedExtras(){
+  if(!DB.seeded6026){
+    DB.seeded6026 = true;
+    if(!DB.jobs.some(j=>j.artikel==="6026")) DB.jobs.push({id:uid(), kunde:"Seyfert", artikel:"6026", format:"630 x 1610", dicke:"2,4", speed:"3700", leerhuebe:"0", buendel:"52", einschub:true, bremsbuerste:true,
+      notiz:"Werte von den Fotos vom 19.11.2026: Ist 3682/h, Ausstoß 3700/h, 25.437 Bogen gesamt.",
+      values:{st_spalt_as:"-1,19", st_druck:"195", st_tiegel:"194,0", au_band:"50", au_takt:"0,5", au_hoehe:"342"},
+      extra:{}, photos:[], history:[], ruestzeiten:[], created:Date.now(), updated:Date.now(), used:Date.now()-1000});
+  }
   if(!Array.isArray(DB.fehler)) DB.fehler = FEHLER_DEFAULT.map(x=>({...x}));
   if(!Array.isArray(DB.checklist)) DB.checklist = CHECK_DEFAULT.map(x=>({...x}));
   if(!Array.isArray(DB.checkDone)) DB.checkDone = [];
@@ -660,7 +798,7 @@ function viewTopic(v, id){
 function viewQuiz(v){
   if(quiz.done){
     const p = quiz.score;
-    v.innerHTML = `<div class="hero ${p>=8?"gr":"or"}"><div class="big">🏆</div><small>Ergebnis</small><h1>${p} von ${QUIZ.length} richtig</h1><p>${p===QUIZ.length?"Perfekt – Meister der Stanze!":p>=8?"Sehr gut!":p>=5?"Gut, schau dir die Themen nochmal an.":"Lies die Themen durch und versuch es nochmal."}</p></div>
+    v.innerHTML = `<div class="hero ${p>=QUIZ.length*.75?"gr":"or"}"><div class="big">🏆</div><small>Ergebnis</small><h1>${p} von ${QUIZ.length} richtig</h1><p>${p===QUIZ.length?"Perfekt – Meister der Stanze!":p>=QUIZ.length*.75?"Sehr gut!":p>=QUIZ.length/2?"Gut, schau dir die Themen nochmal an.":"Lies die Themen durch und versuch es nochmal."}</p></div>
       <button class="btn" id="again">Nochmal</button><button class="btn light" id="back">Zurück zu Wissen</button>`;
     v.querySelector("#again").onclick = () => { quiz = {i:0, score:0, order:[...QUIZ.keys()].sort(()=>Math.random()-.5), done:false, ans:null}; render(); };
     v.querySelector("#back").onclick = () => { SUB=null; render(); };
@@ -678,7 +816,7 @@ function viewQuiz(v){
 }
 
 /* ===================== RECHNER ===================== */
-const calc = {soll:"", ist:"", aus:"", nutzen:"", bogen:"", stapelH:"", dicke:""};
+const calc = {soll:"", ist:"", aus:"", nutzen:"", bogen:"", stapelH:"", dicke:"", bpb:"", bdicke:"", bges:""};
 function viewRechner(v){
   v.innerHTML = `
     <div class="hero"><div class="big">🧮</div><small>Rechner</small><h1>Schnell gerechnet</h1><p>Restzeit, Nutzen und Stapel.</p></div>
@@ -694,6 +832,12 @@ function viewRechner(v){
       <label class="f"><span>Nutzen pro Bogen</span><input data-c="nutzen" inputmode="numeric" value="${esc(calc.nutzen)}"></label>
       <label class="f"><span>Bogen</span><input data-c="bogen" inputmode="numeric" value="${esc(calc.bogen)}"></label>
     </div><div id="r2"></div></div>
+    <h2>🧱 Bündel</h2>
+    <div class="card"><div class="grid">
+      <label class="f"><span>Bogen pro Bündel</span><input data-c="bpb" inputmode="numeric" value="${esc(calc.bpb)}" placeholder="52"></label>
+      <label class="f"><span>Bogendicke</span><div class="unit"><input data-c="bdicke" inputmode="decimal" value="${esc(calc.bdicke)}" placeholder="2,4"><em>mm</em></div></label>
+      <label class="f full"><span>Bogen gesamt (Auftrag)</span><input data-c="bges" inputmode="numeric" value="${esc(calc.bges)}"></label>
+    </div><div id="r4"></div><div class="small">Grenzen laut Mada Bogenableger: 50–410 mm. Wellpappe federt – nur Richtwert.</div></div>
     <h2>📏 Bogen im Stapel</h2>
     <div class="card"><div class="grid">
       <label class="f"><span>Stapelhöhe</span><div class="unit"><input data-c="stapelH" inputmode="decimal" value="${esc(calc.stapelH)}"><em>mm</em></div></label>
@@ -717,6 +861,12 @@ function viewRechner(v){
     const n=num(calc.nutzen), b=num(calc.bogen);
     v.querySelector("#r2").innerHTML = n&&b ? `<div class="res">${fmt(n*b)} Stück</div>` : `<div class="small">Nutzen und Bogen eintragen.</div>`;
     const sh=num(calc.stapelH), d=num(calc.dicke);
+    const bpb=num(calc.bpb), bd=num(calc.bdicke), bg=num(calc.bges);
+    let r4 = `<div class="small">Bogen pro Bündel und Dicke eintragen.</div>`;
+    if(bpb && bd){ const h = bpb*bd; const ok = h>=50 && h<=410;
+      r4 = `<div class="res">≈ ${fmt(h,0)} mm hoch</div><div class="small" style="color:${ok?"var(--ok)":"var(--bad)"};font-weight:600">${ok?"✓ passt in 50–410 mm":h<50?"⚠ unter 50 mm Mindesthöhe":"⚠ über 410 mm Maximalhöhe"}</div>`
+        + (bg ? `<div class="small" style="margin-top:4px">${fmt(Math.ceil(bg/bpb))} Bündel${bg%bpb?` (letztes mit ${fmt(bg%bpb)} Bogen)`:""}</div>` : ""); }
+    v.querySelector("#r4").innerHTML = r4;
     v.querySelector("#r3").innerHTML = sh&&d ? `<div class="res">≈ ${fmt(Math.floor(sh/d))} Bogen</div>` : "";
   };
   v.querySelectorAll("[data-c]").forEach(i => i.oninput = () => { calc[i.dataset.c] = i.value; upd(); });
@@ -878,7 +1028,7 @@ function pdfJob(j){
   P.doc.setFontSize(7); P.doc.setTextColor(93,107,136); P.doc.text("in Fox Stanze scannen", 183, 59, {align:"center"}); P.doc.setTextColor(22,33,63);
   pdfHead(P, "Auftrag");
   P.doc.setFontSize(10);
-  [["Format", j.format],["Bogendicke", j.dicke?j.dicke+" mm":""],["Geschwindigkeit", j.speed?j.speed+" /h":""],["Leerhübe", j.leerhuebe],["Einschub Automatik", j.einschub?"an":"aus"],["Bremsbürste", j.bremsbuerste?"an":"aus"]]
+  [["Format", j.format],["Bogen pro Bündel", j.buendel],["Bogendicke", j.dicke?j.dicke+" mm":""],["Geschwindigkeit", j.speed?j.speed+" /h":""],["Leerhübe", j.leerhuebe],["Einschub Automatik", j.einschub?"an":"aus"],["Bremsbürste", j.bremsbuerste?"an":"aus"]]
     .forEach(([l,v]) => { P.doc.setFont("helvetica","normal"); P.doc.setTextColor(93,107,136); P.doc.text(pdfTxt(l), 14, P.y); P.doc.setFont("helvetica","bold"); P.doc.setTextColor(22,33,63); P.doc.text(pdfTxt(v||"-"), 70, P.y); P.y += 6; });
   P.y = Math.max(P.y, 64) + 2;
   const rz = j.ruestzeiten||[];
