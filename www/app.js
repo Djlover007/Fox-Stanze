@@ -621,6 +621,7 @@ function viewWissen(v){
   if(SUB === "check") return viewCheck(v);
   if(SUB === "pulte") return viewPulte(v);
   if(SUB === "pal") return viewPal(v);
+  if(SUB === "guide") return viewGuide(v);
   if(SUB === "fehler") return viewFehler(v);
   if(SUB && SUB.startsWith("fehler:")) return viewFehlerEdit(v, SUB.slice(7));
   if(SUB) return viewTopic(v, SUB);
@@ -628,6 +629,7 @@ function viewWissen(v){
     <div class="hero or"><div class="big">📖</div><small>Wissen & Schulung</small><h1>Die Stanze verstehen</h1>
       <p>Für dich und für Azubis – mit eigenen Notizen pro Thema.</p></div>
     <button class="btn" id="startQuiz" style="margin-bottom:12px">🎯 Quiz starten (${QUIZ.length} Fragen)${DB.quizBest?` · Bestwert ${DB.quizBest}/${QUIZ.length}`:""}</button>
+    <div class="item" id="goGuide" style="border-left-color:var(--green)"><div class="t"><b>📸 Bedienanleitung mit Fotos</b><small>${GUIDE.reduce((a,g)=>a+g.items.length,0)} Bildschirme Schritt für Schritt – Stanze &amp; Palettierer</small></div><div class="go">›</div></div>
     <div class="item" id="goPal" style="border-left-color:#7b2fd1"><div class="t"><b>🧱 Palettierer Corrpal</b><small>Alle Stationen, Bildschirme, Auftragsfenster und Pult erklärt</small></div><div class="go">›</div></div>
     <div class="item" id="goPulte" style="border-left-color:var(--fox)"><div class="t"><b>🎛️ Bedienpulte &amp; Symbole</b><small>Jeder Knopf an den 3 Pulten erklärt – mit deinen Fotos</small></div><div class="go">›</div></div>
     <div class="item" id="goCheck" style="border-left-color:var(--green)"><div class="t"><b>✅ Rüst-Checkliste</b><small>Schritt für Schritt abhaken – für Azubis · ${DB.checkDone.length}/${DB.checklist.length} erledigt</small></div><div class="go">›</div></div>
@@ -635,6 +637,7 @@ function viewWissen(v){
     <h2>Themen</h2>
     ${TOPICS.map(t=>`<div class="item" data-id="${t.id}" style="border-left-color:var(--accent)"><div class="t"><b>${t.icon} ${t.title}</b>${DB.notes[t.id]?`<small>📝 eigene Notiz</small>`:""}</div><div class="go">›</div></div>`).join("")}`;
   v.querySelectorAll(".item[data-id]").forEach(el => el.onclick = () => { SUB = el.dataset.id; render(); scrollTo(0,0); });
+  v.querySelector("#goGuide").onclick = () => { SUB="guide"; guideSel=null; render(); scrollTo(0,0); };
   v.querySelector("#goPal").onclick = () => { SUB="pal"; render(); scrollTo(0,0); };
   v.querySelector("#goPulte").onclick = () => { SUB="pulte"; render(); scrollTo(0,0); };
   v.querySelector("#goCheck").onclick = () => { SUB="check"; render(); scrollTo(0,0); };
@@ -716,6 +719,174 @@ function viewPulte(v){
     const m = modal(`<h3>${esc(S[k].n)}</h3><p class="small" style="margin-bottom:8px">Was macht dieser Knopf bei euch wirklich?</p><textarea id="sn">${esc(DB.symNotes[k]||"")}</textarea><button class="btn" id="ok">Speichern</button><button class="btn light" data-close>Abbrechen</button>`);
     m.querySelector("#ok").onclick = () => { const t = m.querySelector("#sn").value.trim(); if(t) DB.symNotes[k]=t; else delete DB.symNotes[k]; save(); m.remove(); render(); toast("Gespeichert ✓"); };
   });
+}
+
+/* ---------- Bedienanleitung mit Fotos ---------- */
+const GUIDE = [
+ {id:"gcut", t:"Stanze Göpfert G-Cut", icon:"🔨", items:[
+  {img:"g-produktion2", t:"Produktion – Hauptbild", s:[
+    "Links <b>Jobdaten</b>: prüfen, ob Kunde, Artikel, Format und Bogendicke zum Auftragsschein passen.",
+    "<b>Stückzahlen</b>: „Gesamt“ zählt die gestanzten Bogen, „Bündel/Stapel“ die Bogen pro Bündel. Mit dem Stift ✏️ kannst du beide Zähler ändern (z. B. Gesamt bei neuem Auftrag auf 0).",
+    "<b>Geschwindigkeit</b>: Sollwert ins Feld tippen oder mit − / + verstellen. Die Zahl darüber ist der Ist-Wert, darunter steht der tatsächliche Ausstoß pro Stunde.",
+    "<b>Funktionen</b> rechts: Feld antippen schaltet um, <b>grün = an</b>. „Anstanzen“ für Probebogen, „Einschub Automatik“ für den automatischen Einzug, „Bremsbürste“ an der Ablage, „Leerhübe“ = Hübe ohne Bogen.",
+    "<b>Stanzung</b>: Spalt, Druck und Tiegelposition nur ablesen – verstellt wird der Spalt im Korrektur-Bild „Stanze“.",
+    "Nach dem Einrichten <b>Korrekturen speichern</b> drücken, damit die Werte beim nächsten Mal wieder da sind.",
+    "Unten das <b>Anlagenbild</b>: ein blaues ⓘ zeigt die Station mit einer Meldung."]},
+  {img:"g-produktion", t:"Produktion – mit Stanzwerten", s:[
+    "Gleiches Bild bei einem anderen Artikel: hier mit Druck 238 t und Spalt −1,34.",
+    "Die Statusleuchten oben rechts müssen für die Produktion grün sein: Steuerung Ein, Sicherheit OK, Hauptmotor Ein, Einschub Ein."]},
+  {img:"g-anleger", t:"Korrektur – Anleger", s:[
+    "Über <b>Korrektur</b> links öffnen, mit den Punkten unten durch die Seiten blättern.",
+    "Jeder Kasten gehört zu dem Teil, auf das die Linie zeigt. Mit den Pfeiltasten fährst du das Teil, die Zahl zeigt den Wert.",
+    "<b>🔗 grün</b> = Antriebs- und Bedienseite sind gekoppelt (z. B. 634,0 / −634,0). Kette antippen löst die Kopplung, dann jede Seite einzeln einstellen.",
+    "<b>⏩| grün</b> = fährt automatisch auf das Format.",
+    "Der grüne Lichtkegel ist der Bogensensor. Das Lüfter-Symbol schaltet das Gebläse."]},
+  {img:"g-stanze", t:"Korrektur – Stanze", s:[
+    "<b>Spalt</b> links (AS) und rechts (BS) mit − / + verstellen. Mit 🔗 grün ändern sich beide gleich.",
+    "Schneidet es nicht durch: Spalt in kleinen Schritten verringern (negativer = mehr Druck). Die Druckanzeige (z. B. 238 t) steigt dann.",
+    "Die beiden Temperaturen sind Messwerte. Der rote Balken rechts zeigt die Tiegelstellung.",
+    "<b>ARF</b> ist eine Funktion zum Einlernen (siehe „ARF Teachen“ im Produktionsbild)."]},
+  {img:"g-ausbrech", t:"Korrektur – Ausbrechstation", s:[
+    "Oben links und Mitte: Seitenführungen (gekoppelt mit 🔗).",
+    "Oben Mitte <b>↓ ↑</b>: Höhe des Oberteils – bleibt Abfall hängen, hier nachstellen.",
+    "Rechts: Format-/Anschlagposition, unten rechts die Position des Unterteils mit Kopplung."]},
+  {img:"g-ablage", t:"Korrektur – Bogenablager", s:[
+    "Seitenführungen oben (🔗 gekoppelt) und unten, Hinteranschlag rechts unten.",
+    "Oben rechts die <b>Bürstenwalze</b> mit ↻ / ↺ verstellen.",
+    "Feld „100“ in der Mitte = Stapelhöhe. Die grünen ⏩|-Tasten fahren die Teile automatisch auf Format."]},
+  {img:"g-austransport", t:"Korrektur – Austransport", s:[
+    "Linkes Band: Geschwindigkeit mit − / + (z. B. 50), Pfeile fahren das Band vor/zurück.",
+    "Rechtes Band: Zeit (z. B. 0,5 s) mit − / +, Höhe mit ↓ ↑ (z. B. 342 oder 555), Kette koppelt es an das linke Band."]},
+  {img:"g-stopper", t:"Korrektur – Stopperüberwachung", s:[
+    "Für jede Station (Bogenableger, Ausbrechstation, Stanztiegel Auslauf, Bogenübergabe, Frontanschlag) gibt es einen Sensor auf AS und BS.",
+    "<b>0|I</b> schaltet die Überwachung, grüner Punkt = Sensor in Ordnung.",
+    "Die Felder (150 / 1085) sind die Kontrollpunkte in mm ab Bogenvorderkante.",
+    "Unten: Bogenimpulse und Stauüberwachung AS/BS. <b>Überwachungen nicht abschalten, um eine Störung zu umgehen.</b>"]},
+  {img:"g-auftrag", t:"Auftrag – Auftragsliste", s:[
+    "Oben die Liste der geplanten Aufträge, der grüne ist ausgewählt. Mit den Pfeiltasten rechts die Reihenfolge ändern.",
+    "Darunter suchen: Kunde, Artikel oder Auftrag ins Feld tippen, Trichter ✕ löscht den Filter.",
+    "Rechts: <b>Positionieren</b> fährt die Maschine aufs Format des Auftrags, <b>Neuer Auftrag</b>, <b>Auftrag bearbeiten</b>, <b>Auftrag als Vorlage</b> (von einem ähnlichen Artikel starten), <b>Von Liste löschen</b>."]},
+  {img:"g-meldungen", t:"Meldungen", s:[
+    "Meldung in der Liste antippen – rechts stehen die Details mit <b>Nr.</b> und <b>Schaltplan</b>-Stelle. Die beiden für den Elektriker notieren.",
+    "Unten filtern: Fehler 🔺, Warnung ⚠️, Info ⓘ, Sicherheit 🛡️.",
+    "Ursache beheben, dann <b>Quittieren</b>. <b>Archiv</b> zeigt alte Meldungen, <b>Hilfe</b> und <b>Schaltplan</b> geben mehr Infos."]},
+  {img:"g-mada", t:"Maschine – Mada (Maschinendaten)", s:[
+    "Reiter <b>Mada</b> › links das Aggregat wählen (z. B. Bogenableger) › Gruppen mit ⌃ auf-/zuklappen.",
+    "Hier stehen Grundwerte wie Min./Max. Bündelhöhe (50 / 410 mm) und die Fettschmierung (120 s an, 2400 min Pause).",
+    "<b>Nur mit Befugnis ändern</b> und dann „Speichern“ – die Werte gelten für alle Aufträge."]},
+  {img:"g-sicherheit", t:"Sicherheit", s:[
+    "3D-Bild der Anlage: blaue Türsymbole = Schutztüren, gelbe Ringe = Not-Halt-Taster. Eine offene Tür bzw. ein gedrückter Not-Halt wird hier angezeigt.",
+    "Tür schließen bzw. Not-Halt entriegeln, dann <b>Reintegration</b> drücken. <b>Abläufe stoppen</b> hält automatische Abläufe an, <b>Drehen</b> dreht die Ansicht."]},
+ ]},
+ {id:"corrpal", t:"Palettierer Corrpal", icon:"🧱", items:[
+  {img:"c-produktion", t:"Produktion", s:[
+    "<b>Jobdaten</b>: Kunde, Artikel und <b>Bündelhöhe</b> prüfen.",
+    "<b>Stückzähler</b>: Lagen Soll / Ist und Paletten Soll / Ist.",
+    "<b>Geschwindigkeit</b> in %: Band, Drehung (Drehtisch), Gabel und Lift – jeweils mit eigener Beschleunigung. Mit − / + verstellen, bei Problemen (Stapel verrutschen) langsamer bzw. sanfter beschleunigen.",
+    "Rechts sieht man, wie die Bündel beim Eintransport und Austransport liegen.",
+    "<b>Korrekturen speichern</b> sichert die Werte zum Artikel."]},
+  {img:"c-korrektur", t:"Korrektur – Anlagenbild", s:[
+    "Alle Stationen von BS1 (Brecher) bis CV2 (Austransport). Grün = bereit. Die Farbrahmen sind die Automatik-Bereiche 1–4, oben rechts einzeln startbar.",
+    "Oben links <b>Automatik</b> für die ganze Anlage.",
+    "Unten: <b>Räumen</b> fährt die Anlage leer, <b>PAL Räumen</b> nur den Palettierer, <b>Kein Schutzbogen</b>, <b>Musterbogen</b> (Muster entnehmen), <b>Reintegration</b> nach Tür offen, <b>Abläufe stoppen</b>.",
+    "Tür-, Schloss- und gelbe Ring-Symbole zeigen Schutztüren und Not-Halt. Stationen im Detail: siehe „Palettierer Corrpal“."]},
+  {img:"c-auftrag", t:"Auftrag – Liste", s:[
+    "Gleiche Liste wie an der Stanze. Rechts der ausgewählte Auftrag mit Bündelhöhe und Bündelbild.",
+    "<b>Auftrag bearbeiten</b> öffnet das Auftragsfenster mit 7 Reitern (nächste Seiten)."]},
+  {img:"c-a-allgemein", t:"Auftrag › Allgemein", s:[
+    "Kunde, Artikel, Auftragsnummer eintragen.",
+    "<b>Bündelhöhe</b> (mm) eingeben oder mit dem Taschenrechner berechnen, <b>Lagenanzahl</b> eingeben – die <b>Stapelhöhe</b> rechnet die Maschine (z. B. 138 × 10 = 1380 mm).",
+    "„Manuelle Eingabe“ nur ankreuzen, wenn die Werte nicht automatisch berechnet werden sollen."]},
+  {img:"c-a-eintransport", t:"Auftrag › Eintransport", s:[
+    "Rechts das Bündelmaß (z. B. 998 × 464) und wie viele Bündel nebeneinander kommen – mit + ergänzen.",
+    "Links <b>Zyklen Brecher 1</b> und <b>Brecher 2</b>: wie oft gebrochen wird. Bricht es nicht sauber, Zyklen erhöhen.",
+    "„Vor Brechen nicht sammeln“ ankreuzen, wenn jedes Bündel einzeln gebrochen werden soll."]},
+  {img:"c-a-austransport", t:"Auftrag › Austransport", s:[
+    "Links eine <b>Vorlage</b> für das Lagenmuster wählen, rechts siehst du die Lage auf der Palette.",
+    "<b>Palettenformat</b> wählen (z. B. Europalette 800 × 1200 × 150) oder mit ✏️ ein eigenes anlegen.",
+    "Mit den Tasten rechts Bündel drehen, verschieben oder spiegeln, 🗑 löscht. Das <b>Lagenformat</b> wird angezeigt."]},
+  {img:"c-a-optionen", t:"Auftrag › Optionen", s:[
+    "<b>Zwischenbogen</b>: in welche Lagen ein Zwischenbogen kommt (Keine / Alle / 1,3,5 / 2,4,6 / eigene), darunter die Größe (keiner / ganz / halb).",
+    "<b>Lage wenden</b>: welche Lagen gewendet werden.",
+    "<b>Stapel ausrichten</b>: welche Lagen ausgerichtet werden – „Alle“ gibt saubere Paletten.",
+    "<b>Schutzbogen</b>: Art des Schutzbogens oben/unten und <b>Schutzbogenmaß</b>. Grün = ausgewählt."]},
+  {img:"c-a-simulation", t:"Auftrag › Simulation", s:[
+    "Ablauf vorher am Bildschirm testen: ▶ startet, ⏭ geht Schritt für Schritt, ↺ setzt zurück, − / + ändert die Geschwindigkeit.",
+    "So siehst du vor dem Start, ob Muster, Wenden und Zwischenbogen passen."]},
+  {img:"c-a-bemerkungen", t:"Auftrag › Bemerkungen", s:[
+    "<b>Neue Bemerkung</b> für Hinweise zum Artikel (z. B. „langsamer drehen, Stapel kippen“). Ändern und Löschen rechts.",
+    "Tipp: Dieselben Hinweise kannst du auch im Fox-Stanze-Rüstblatt speichern."]},
+  {img:"c-a-historie", t:"Auftrag › Auftragshistorie", s:[
+    "Alle bisherigen Läufe mit Start, Ende, Zeit und Menge. Rechts die Statistik: Läufe, Menge gesamt, Menge pro Lauf, Zeit pro 100 Lagen.",
+    "Unten im Fenster: <b>Berechnen</b>, <b>Speichern</b>, <b>In Liste setzen</b> (Auftrag in die Auftragsliste), <b>Abbrechen</b>."]},
+  {img:"c-meldungen", t:"Meldungen", s:[
+    "Wie an der Stanze: Meldung antippen, rechts Details mit Nr. und Schaltplan.",
+    "Filter für Fehler, Warnung, Info, Sicherheit und Maschine. <b>Reintegration</b> und <b>Quittieren</b> unten."]},
+  {img:"c-sollist", t:"Maschine › Soll-/Ist-Werte", s:[
+    "Links ein Aggregat wählen (MA = gesamte Maschine, Separator 1 … Dispenser Palletiser 1).",
+    "Rechts jede Achse mit Soll, Ist und Status (grün = in Ordnung), z. B. Achse 250 Stapelhöhe.",
+    "Unten kann ein Wert mit − / + verstellt werden – nur wenn du dazu befugt bist."]},
+  {img:"c-mada", t:"Maschine › Mada", s:[
+    "Maschinendaten: <b>Module</b>, <b>Achsen</b>, <b>Tastermodule</b>, <b>Antriebe</b>, <b>Host Info</b>. Mit › öffnen.",
+    "Nur für Instandhaltung und befugte Personen."]},
+  {img:"c-bde", t:"Maschine › BDE", s:[
+    "Betriebsdatenerfassung je Aggregat (Name / Wert), z. B. Laufzeiten und Zähler."]},
+  {img:"c-wartung", t:"Maschine › Wartung", s:[
+    "<b>Speed Test</b> für die Instandhaltung.",
+    "Unten: <b>Bildschirm reinigen</b> sperrt den Touchscreen kurz zum Abwischen, <b>Bildschirm kalibrieren</b> wenn Berührungen falsch erkannt werden."]},
+  {img:"c-diagnose", t:"Maschine › Diagnose › Kopplung", s:[
+    "Zeigt die Signale zwischen Stanze und Palettierer. Grüner Punkt = Signal aktiv.",
+    "<b>Transfersystem</b>: Receive „Release Outfeed“ (Stanze darf ausgeben); Send: Double Stacking, Request Outfeed, Outfeed Manual, Outfeed Running.",
+    "<b>PalletInfeed</b>: Pallet Stack In Position / Running; Send: Manual Backward / Forward, Release Infeed Pallet, Request Pallet.",
+    "Hängt die Übergabe von der Stanze, hier schauen, welches Signal fehlt. Reiter <b>SPS</b> ist für den Elektriker."]},
+  {img:"c-benutzer", t:"Maschine › Benutzer", s:[
+    "Anmelden: Benutzer wählen, Passwort, <b>Login</b>. Je nach Gruppe sind mehr Einstellungen frei.",
+    "Gruppen: <b>Operator</b> (Bediener), <b>mMaintenance</b> (Mechanik), <b>eMaintenance</b> (Elektrik), <b>IBN</b> (Inbetriebnahme Göpfert), <b>DEV</b> (Entwicklung). Passwörter niemals in dieser App speichern."]},
+  {img:"c-sprache", t:"Maschine › Sprache", s:[
+    "Deutsch oder Englisch antippen, dann <b>Ok</b>. Gut für Kollegen, die besser Englisch lesen."]},
+  {img:"c-datum", t:"Maschine › Datum / Uhrzeit", s:[
+    "Mit ▲ ▼ einstellen, <b>Speichern</b>. <b>Zurücksetzen</b> verwirft. Die Uhrzeit ist wichtig für Meldungen und BDE."]},
+ ]},
+];
+let guideSel = null;
+function viewGuide(v){
+  if(guideSel){
+    const [gi, ii] = guideSel; const G = GUIDE[gi], it = G.items[ii];
+    v.innerHTML = `<button class="back" id="back">‹ ${esc(G.t)}</button>
+      <div class="small" style="margin:0 4px 6px">${G.icon} ${esc(G.t)} · ${ii+1} von ${G.items.length}</div>
+      <h3 style="font-size:20px;margin:0 4px 10px">${esc(it.t)}</h3>
+      <div class="card" style="padding:6px"><img src="img/bs/${it.img}.jpg" id="gimg" style="width:100%;display:block;border-radius:12px"><div class="small" style="text-align:center;margin-top:4px">Antippen zum Vergrößern</div></div>
+      <div class="card topic"><h3>So bedienst du es</h3><ol style="margin:0 0 0 20px;font-size:15px;line-height:1.5">${it.s.map(x=>`<li style="margin-bottom:6px">${x}</li>`).join("")}</ol>
+        ${DB.notes["g_"+it.img]?`<div class="note"><b>Meine Notiz:</b> ${esc(DB.notes["g_"+it.img])}</div>`:""}
+        <button class="chip" id="gnote" style="margin-top:4px">✏️ ${DB.notes["g_"+it.img]?"Notiz ändern":"Eigene Notiz"}</button></div>
+      <div class="row" style="gap:8px">${ii>0?`<button class="btn light" id="prev">‹ Zurück</button>`:"<span></span>"}${ii<G.items.length-1?`<button class="btn" id="next">Weiter ›</button>`:"<span></span>"}</div>`;
+    v.querySelector("#back").onclick = () => { guideSel=null; render(); scrollTo(0,0); };
+    const pv=v.querySelector("#prev"); if(pv) pv.onclick = () => { guideSel=[gi,ii-1]; render(); scrollTo(0,0); };
+    const nx=v.querySelector("#next"); if(nx) nx.onclick = () => { guideSel=[gi,ii+1]; render(); scrollTo(0,0); };
+    v.querySelector("#gimg").onclick = () => zoomImg(`img/bs/${it.img}.jpg`);
+    v.querySelector("#gnote").onclick = () => {
+      const k = "g_"+it.img;
+      const m = modal(`<h3>Notiz: ${esc(it.t)}</h3><textarea id="gn">${esc(DB.notes[k]||"")}</textarea><button class="btn" id="ok">Speichern</button><button class="btn light" data-close>Abbrechen</button>`);
+      m.querySelector("#ok").onclick = () => { const t=m.querySelector("#gn").value.trim(); if(t) DB.notes[k]=t; else delete DB.notes[k]; save(); m.remove(); render(); };
+    };
+    return;
+  }
+  v.innerHTML = `<button class="back" id="back">‹ Wissen</button>
+    <div class="hero gr"><div class="big">📸</div><small>Bedienanleitung</small><h1>Bildschirm für Bildschirm</h1><p>Deine Fotos mit Schritt-für-Schritt-Erklärung. Kundennamen sind unkenntlich gemacht.</p></div>
+    ${GUIDE.map((G,gi)=>`<h2>${G.icon} ${esc(G.t)} <span>${G.items.length} Seiten</span></h2>
+      ${G.items.map((it,ii)=>`<div class="item" data-g="${gi},${ii}" style="border-left-color:${gi?"#7b2fd1":"var(--accent)"}"><img src="img/bs/${it.img}.jpg" loading="lazy" style="width:72px;height:50px;object-fit:cover;border-radius:8px;flex:none"><div class="t"><b style="font-size:15px">${esc(it.t)}</b><small>${it.s.length} Schritte${DB.notes["g_"+it.img]?" · 📝":""}</small></div><div class="go">›</div></div>`).join("")}`).join("")}
+    <p class="small" style="margin:8px 4px">Die Erklärungen sind aus den Bildschirmen abgeleitet – bei Abweichungen gilt die Betriebsanweisung.</p>`;
+  v.querySelector("#back").onclick = () => { SUB=null; render(); scrollTo(0,0); };
+  v.querySelectorAll("[data-g]").forEach(el => el.onclick = () => { guideSel = el.dataset.g.split(",").map(Number); render(); scrollTo(0,0); });
+}
+function zoomImg(src){
+  const el = document.createElement("div"); el.className="ocr";
+  let z = 1;
+  const draw = () => { el.innerHTML = `<div class="pic"><div class="inner" style="width:${z*100}%"><img src="${src}"></div></div>
+    <div class="bot"><button data-z="1" class="${z===1?"go":""}">1×</button><button data-z="2" class="${z===2?"go":""}">2×</button><button data-z="3" class="${z===3?"go":""}">3×</button><button data-x>✕ Schließen</button></div>`;
+    el.querySelectorAll("[data-z]").forEach(b => b.onclick = () => { z=+b.dataset.z; draw(); });
+    el.querySelector("[data-x]").onclick = () => el.remove(); };
+  document.body.appendChild(el); draw();
 }
 
 /* ---------- Palettierer Corrpal ---------- */
