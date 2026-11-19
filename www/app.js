@@ -122,6 +122,7 @@ function seed(){
 let TAB = "ruesten", SUB = null;
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { TAB = b.dataset.tab; SUB = null; render(); scrollTo(0,0); });
 function render(){
+  if(typeof simStop==="function" && SUB!=="palsim") simStop();
   document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === TAB));
   const v = document.getElementById("view");
   ({ruesten:viewRuesten, schicht:viewSchicht, wissen:viewWissen, rechner:viewRechner})[TAB](v);
@@ -621,6 +622,7 @@ function viewWissen(v){
   if(SUB === "check") return viewCheck(v);
   if(SUB === "pulte") return viewPulte(v);
   if(SUB === "pal") return viewPal(v);
+  if(SUB === "palsim") return viewPalSim(v);
   if(SUB === "guide") return viewGuide(v);
   if(SUB === "fehler") return viewFehler(v);
   if(SUB && SUB.startsWith("fehler:")) return viewFehlerEdit(v, SUB.slice(7));
@@ -812,7 +814,8 @@ const GUIDE = [
     "<b>Schutzbogen</b>: Art des Schutzbogens oben/unten und <b>Schutzbogenmaß</b>. Grün = ausgewählt."]},
   {img:"c-a-simulation", t:"Auftrag › Simulation", s:[
     "Ablauf vorher am Bildschirm testen: ▶ startet, ⏭ geht Schritt für Schritt, ↺ setzt zurück, − / + ändert die Geschwindigkeit.",
-    "So siehst du vor dem Start, ob Muster, Wenden und Zwischenbogen passen."]},
+    "So siehst du vor dem Start, ob Muster, Wenden und Zwischenbogen passen.",
+    "Zum Üben gibt es die Simulation auch in dieser App: 🧱 Palettierer Corrpal › ▶️ Simulation starten."]},
   {img:"c-a-bemerkungen", t:"Auftrag › Bemerkungen", s:[
     "<b>Neue Bemerkung</b> für Hinweise zum Artikel (z. B. „langsamer drehen, Stapel kippen“). Ändern und Löschen rechts.",
     "Tipp: Dieselben Hinweise kannst du auch im Fox-Stanze-Rüstblatt speichern."]},
@@ -916,6 +919,7 @@ function viewPal(v){
     <div class="hero" style="background:linear-gradient(135deg,#7b2fd1,#3b3fc0)"><div class="big">🧱</div><small>Corrpal · Member of the Göpfert Group</small><h1>Palettierer</h1><p>Steht hinter der Stanze: bricht die Bündel, bildet Lagen und stapelt sie auf Paletten.</p></div>
     <h2>📸 Bildschirme mit Fotos <span>${GUIDE[1].items.length} Seiten</span></h2>
     <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px">${GUIDE[1].items.map((it,ii)=>`<button data-pg="${ii}" style="flex:none;width:132px;border:0;background:var(--card);border-radius:14px;padding:6px;text-align:left;color:var(--text)"><img src="img/bs/${it.img}.jpg" style="width:120px;height:80px;object-fit:cover;border-radius:10px;display:block"><span style="display:block;font-size:12px;font-weight:700;margin-top:4px;line-height:1.25">${esc(it.t)}</span></button>`).join("")}</div>
+    <button class="btn fox" id="palSim">▶️ Simulation starten</button>
     <button class="btn" id="palGuide" style="margin-bottom:6px">📸 Alle Corrpal-Bildschirme Schritt für Schritt</button>
     <h2>Anlage <span>Tippe auf eine Station</span></h2>
     <div class="card" style="padding:10px"><div style="position:relative;width:100%;padding-top:82%">
@@ -951,8 +955,149 @@ function viewPal(v){
     ${PAL_PULT.map(([k],i)=>`<div class="card"><b>${i+1}. ${esc(S[k].n)}</b><div style="font-size:14px;line-height:1.45;margin-top:5px">${esc(S[k].d)}</div>${DB.symNotes&&DB.symNotes[k]?`<div class="small" style="margin-top:5px;color:var(--fox);font-weight:600">Bei uns: ${esc(DB.symNotes[k])}</div>`:""}</div>`).join("")}`;
   v.querySelector("#back").onclick = () => { SUB=null; palSel=null; render(); };
   v.querySelectorAll("[data-pg]").forEach(b => b.onclick = () => { SUB="guide"; guideSel=[1,+b.dataset.pg]; render(); scrollTo(0,0); });
+  v.querySelector("#palSim").onclick = () => { SUB="palsim"; render(); scrollTo(0,0); };
   v.querySelector("#palGuide").onclick = () => { SUB="guide"; guideSel=[1,0]; render(); scrollTo(0,0); };
   v.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { palSel=+b.dataset.st; render(); document.getElementById("stInfo").scrollIntoView({behavior:"smooth", block:"center"}); });
+}
+
+/* ---------- Corrpal-Simulation ---------- */
+const SIM_OPTS = [["keine","Keine"],["alle","Alle"],["135","1,3,5"],["246","2,4,6"]];
+const simHit = (o, n) => o==="alle" || (o==="135" && n%2===1) || (o==="246" && n%2===0);
+const simMap = t => { t = String(t||"").toLowerCase(); return t.includes("alle")?"alle":t.includes("1,3")||t.includes("135")?"135":t.includes("2,4")||t.includes("246")?"246":"keine"; };
+let SIMP = {lagen:4, buendel:2, b1:1, b2:1, zw:"alle", wenden:"keine", ausr:"alle", schutz:true, speed:3};
+let SIM = null, simTimer = null;
+function simBuild(){
+  const P = SIMP, st = [];
+  const add = (k, t, ex) => st.push(Object.assign({k, t}, ex||{}));
+  add("DIP1", "Paletten-Magazin gibt eine leere Palette an den Palettierer.", {pal:"leer"});
+  for(let L=1; L<=P.lagen; L++){
+    for(let b=1; b<=P.buendel; b++){
+      const tag = `Lage ${L}, Bündel ${b}/${P.buendel}`;
+      add("BS1", `${tag}: Bündel kommt von der Stanze in Brecher 1.`);
+      for(let c=1;c<=P.b1;c++) add("BS1", `${tag}: Brecher 1 bricht (Zyklus ${c}/${P.b1}) – die Nutzen trennen sich an den Haltepunkten.`, {brk:1});
+      add("AC1", `${tag}: Winkelförderer 1 – Richtungswechsel 90°.`);
+      for(let c=1;c<=P.b2;c++) add("BS2", `${tag}: Brecher 2 bricht in die andere Richtung (Zyklus ${c}/${P.b2}).`, {brk:1});
+      add("AC2", `${tag}: Winkelförderer 2.`);
+      add("TT1", `${tag}: Drehtisch dreht die Stapel fürs Lagenmuster.`, {rot:1});
+      add("CV1", `${tag}: Förderband 1.`);
+      add("AC3", `${tag}: Winkelförderer 3.`);
+      add("APC1", `${tag}: wird in der Lagenbildung gesammelt.`, {coll:b});
+    }
+    if(simHit(P.ausr, L)) add("APC1", `Lage ${L}: Stapel werden ausgerichtet (Stapel ausrichten).`, {coll:P.buendel});
+    if(simHit(P.wenden, L)) add("LI1", `Lage ${L}: Lagenwender wendet die ganze Lage.`, {flip:1});
+    else add("LI1", `Lage ${L}: läuft durch den Lagenwender (nicht gewendet).`);
+    add("PAL1", `Lage ${L}: Gabel und Lift setzen die Lage auf die Palette.`, {layer:{n:L, flip:simHit(P.wenden,L)}});
+    if(L < P.lagen && simHit(P.zw, L)) add("DIS1", `Zwischenbogen wird auf Lage ${L} gelegt.`, {zw:L});
+  }
+  if(P.schutz) add("DIS1", "Schutzbogen wird oben auf den Stapel gelegt.", {top:1});
+  add("CV2", `Palette fertig: ${P.lagen} Lagen – Austransport fördert sie aus der Anlage.`, {out:1});
+  return st;
+}
+function simState(upto){
+  const r = {layers:[], zw:[], top:false, out:false, coll:0};
+  for(let i=0;i<=upto;i++){ const x = SIM.steps[i];
+    if(x.pal) Object.assign(r, {layers:[], zw:[], top:false, out:false});
+    if(x.layer){ r.layers.push(x.layer); r.coll = 0; }
+    if(x.coll) r.coll = x.coll;
+    if(x.zw) r.zw.push(x.zw);
+    if(x.top) r.top = true;
+    if(x.out) r.out = true; }
+  return r;
+}
+function simCenter(k){ const b = PAL_ST.find(x=>x.k===k).b; return [b[0]+b[2]/2, b[1]+b[3]/2]; }
+function simDraw(){
+  const box = document.getElementById("simBox"); if(!box){ simStop(); return; }
+  const x = SIM.steps[SIM.i], [cx, cy] = simCenter(x.k), stt = simState(SIM.i);
+  box.querySelectorAll("[data-sk]").forEach(el => { const on = el.dataset.sk === x.k; el.style.background = on ? "rgba(242,140,40,.55)" : "rgba(140,210,160,.28)"; el.style.transform = on ? "scale(1.06)" : ""; });
+  const tok = document.getElementById("simTok");
+  tok.style.left = cx+"%"; tok.style.top = cy+"%";
+  tok.style.transform = `translate(-50%,-50%) rotate(${x.rot?90:0}deg) scaleY(${x.flip?-1:1})`;
+  tok.style.opacity = (x.pal || x.k==="DIS1" || x.k==="PAL1" || x.out) ? 0 : 1;
+  tok.innerHTML = x.brk ? "▦" : "▬";
+  document.getElementById("simTxt").innerHTML = `<b>${esc(PAL_ST.find(p=>p.k===x.k).k)}</b> · ${esc(x.t)}`;
+  document.getElementById("simProg").style.width = ((SIM.i+1)/SIM.steps.length*100)+"%";
+  document.getElementById("simCnt").textContent = `Schritt ${SIM.i+1} von ${SIM.steps.length} · Lagen ${stt.layers.length}/${SIMP.lagen}`;
+  // Seitenansicht Palette
+  let h = `<div style="height:14px;background:#a0703c;border-radius:3px;margin-top:2px"></div>`;
+  let stack = "";
+  stt.layers.forEach((l,i) => {
+    stack = `<div style="height:20px;margin-top:2px;background:${l.flip?"#e2c48f":"#f1dcae"};border:1px solid #b99a62;border-radius:3px;font-size:10px;text-align:center;color:#6b5428;line-height:18px">Lage ${l.n}${l.flip?" ↻":""}</div>` + stack;
+    if(stt.zw.includes(l.n)) stack = `<div style="height:3px;margin-top:2px;background:#7b2fd1;border-radius:2px"></div>` + stack;
+  });
+  if(stt.top) stack = `<div style="height:4px;background:#2b6fde;border-radius:2px"></div>` + stack;
+  document.getElementById("simPal").innerHTML = `<div style="transition:transform .6s;transform:translateX(${stt.out?"140%":"0"})">${stack}${h}</div>`;
+  document.getElementById("simColl").textContent = stt.coll ? `In Lagenbildung: ${stt.coll}/${SIMP.buendel} Bündel` : "";
+  document.getElementById("simPlay").textContent = simTimer ? "⏸" : "▶";
+}
+function simStop(){ clearTimeout(simTimer); simTimer = null; }
+function simTick(){
+  if(!document.getElementById("simBox")){ simStop(); return; }
+  if(SIM.i >= SIM.steps.length-1){ simStop(); simDraw(); toast("Simulation fertig ✓"); return; }
+  SIM.i++; simDraw();
+  simTimer = setTimeout(simTick, [1600,1100,750,450,220][SIMP.speed-1]);
+}
+function viewPalSim(v){
+  simStop();
+  SIM = {steps: simBuild(), i: 0};
+  const sel = (k) => `<select data-sp="${k}">${SIM_OPTS.map(([o,l])=>`<option value="${o}" ${SIMP[k]===o?"selected":""}>${l}</option>`).join("")}</select>`;
+  v.innerHTML = `<button class="back" id="back">‹ Palettierer</button>
+    <div class="hero" style="background:linear-gradient(135deg,#7b2fd1,#3b3fc0)"><div class="big">▶️</div><small>Wie „Auftrag › Simulation“ an der Maschine</small><h1>Simulation Palettierer</h1><p>Werte einstellen, ▶ drücken und zuschauen, wie die Palette entsteht.</p></div>
+    <div class="card"><div class="row" style="margin-bottom:8px"><select id="simJob"><option value="">Werte aus Artikel übernehmen …</option>${DB.jobs.filter(j=>j.artikel).map(j=>`<option value="${j.id}">Artikel ${esc(j.artikel)}</option>`).join("")}</select></div>
+      <div class="grid">
+        <label class="f"><span>Lagen</span><input data-sp="lagen" inputmode="numeric" value="${SIMP.lagen}"></label>
+        <label class="f"><span>Bündel pro Lage</span><input data-sp="buendel" inputmode="numeric" value="${SIMP.buendel}"></label>
+        <label class="f"><span>Zyklen Brecher 1</span><input data-sp="b1" inputmode="numeric" value="${SIMP.b1}"></label>
+        <label class="f"><span>Zyklen Brecher 2</span><input data-sp="b2" inputmode="numeric" value="${SIMP.b2}"></label>
+        <label class="f"><span>Zwischenbogen</span>${sel("zw")}</label>
+        <label class="f"><span>Lage wenden</span>${sel("wenden")}</label>
+        <label class="f"><span>Stapel ausrichten</span>${sel("ausr")}</label>
+        <div class="tog"><span>Schutzbogen oben</span><label class="sw"><input type="checkbox" data-sp="schutz" ${SIMP.schutz?"checked":""}><span></span></label></div>
+      </div></div>
+    <div class="card" id="simBox" style="padding:10px">
+      <div style="position:relative;width:100%;padding-top:82%">
+        ${PAL_ST.map(x=>`<div data-sk="${x.k}" style="position:absolute;left:${x.b[0]}%;top:${x.b[1]}%;width:${x.b[2]}%;height:${x.b[3]}%;border:3px solid ${ZONE_C[x.z]};border-radius:8px;font-weight:800;font-size:11px;display:flex;align-items:flex-start;justify-content:center;padding-top:3px;transition:background .3s,transform .3s">${x.k}</div>`).join("")}
+        <div id="simTok" style="position:absolute;font-size:30px;color:#c98a2b;text-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .45s ease,top .45s ease,transform .45s,opacity .3s;pointer-events:none">▬</div>
+        <div style="position:absolute;left:40%;top:30%;width:26%;"><div class="small" style="text-align:center;font-weight:700">Palette</div><div id="simPal" style="overflow:hidden"></div><div id="simColl" class="small" style="text-align:center;margin-top:4px"></div></div>
+      </div>
+      <div class="prog"><i id="simProg"></i></div>
+      <div class="small" id="simCnt"></div>
+      <div id="simTxt" style="font-size:15px;line-height:1.4;min-height:44px;margin:6px 2px"></div>
+      <div class="row" style="gap:6px">
+        <button class="btn light sm" id="simMinus" style="flex:none;width:44px">−</button>
+        <div class="small" style="text-align:center">Tempo ${SIMP.speed}/5</div>
+        <button class="btn light sm" id="simPlus" style="flex:none;width:44px">+</button>
+        <button class="btn sm" id="simPlay" style="flex:none;width:52px">▶</button>
+        <button class="btn light sm" id="simStep" style="flex:none;width:52px">⏭</button>
+        <button class="btn light sm" id="simReset" style="flex:none;width:52px">↺</button>
+      </div>
+      <div class="small" style="margin-top:8px"><span style="color:#7b2fd1">━</span> Zwischenbogen · <span style="color:#2b6fde">━</span> Schutzbogen · ↻ gewendete Lage</div>
+    </div>
+    <p class="small" style="margin:6px 4px">Vereinfachte Darstellung zum Verstehen des Ablaufs – keine echten Maschinenzeiten.</p>`;
+  v.querySelector("#back").onclick = () => { simStop(); SUB="pal"; render(); scrollTo(0,0); };
+  const restart = () => { simStop(); render(); };
+  v.querySelectorAll("[data-sp]").forEach(i => i.onchange = () => {
+    const k = i.dataset.sp;
+    if(i.type==="checkbox") SIMP[k] = i.checked;
+    else if(i.tagName==="SELECT") SIMP[k] = i.value;
+    else SIMP[k] = Math.max(1, Math.min(k==="lagen"?20:k==="buendel"?6:5, parseInt(i.value)||1));
+    restart();
+  });
+  v.querySelector("#simJob").onchange = e => {
+    const j = DB.jobs.find(x=>x.id===e.target.value); if(!j) return; const V = j.values;
+    if(num(V.pal_lagen)) SIMP.lagen = Math.min(20, num(V.pal_lagen));
+    if(num(V.pal_brecher1)) SIMP.b1 = Math.min(5, num(V.pal_brecher1));
+    if(num(V.pal_brecher2)) SIMP.b2 = Math.min(5, num(V.pal_brecher2));
+    if(V.pal_zwbogen) SIMP.zw = simMap(V.pal_zwbogen);
+    if(V.pal_wenden) SIMP.wenden = simMap(V.pal_wenden);
+    if(V.pal_ausrichten) SIMP.ausr = simMap(V.pal_ausrichten);
+    toast(`Werte von Artikel ${j.artikel} übernommen`); restart();
+  };
+  v.querySelector("#simPlay").onclick = () => { if(simTimer){ simStop(); simDraw(); } else { if(SIM.i >= SIM.steps.length-1) SIM.i = 0; simTimer = setTimeout(simTick, 50); simDraw(); } };
+  v.querySelector("#simStep").onclick = () => { simStop(); if(SIM.i < SIM.steps.length-1) SIM.i++; simDraw(); };
+  v.querySelector("#simReset").onclick = () => { simStop(); SIM.i = 0; simDraw(); };
+  v.querySelector("#simMinus").onclick = () => { SIMP.speed = Math.max(1, SIMP.speed-1); const run = !!simTimer; render(); };
+  v.querySelector("#simPlus").onclick = () => { SIMP.speed = Math.min(5, SIMP.speed+1); render(); };
+  simDraw();
 }
 
 /* ---------- Rüst-Checkliste ---------- */
