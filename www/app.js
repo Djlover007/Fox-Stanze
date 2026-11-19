@@ -123,6 +123,7 @@ let TAB = "ruesten", SUB = null;
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { TAB = b.dataset.tab; SUB = null; render(); scrollTo(0,0); });
 function render(){
   if(typeof simStop==="function" && SUB!=="palsim") simStop();
+  if(typeof gStopAnim==="function" && SUB!=="gsim") gStopAnim();
   document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === TAB));
   const v = document.getElementById("view");
   ({ruesten:viewRuesten, schicht:viewSchicht, wissen:viewWissen, rechner:viewRechner})[TAB](v);
@@ -148,6 +149,7 @@ function diffSnap(a, b){ /* Änderungen von a (alt) nach b (neu) */
   return out;
 }
 function viewRuesten(v){
+  if(SUB === "gsim") return viewGSim(v);
   if(SUB) return viewJob(v, SUB);
   const list = DB.jobs.filter(j => (j.artikel+" "+j.kunde+" "+(j.notiz||"")).toLowerCase().includes(jobFilter.toLowerCase()))
     .sort((a,b) => (b.used||b.updated) - (a.used||a.updated));
@@ -161,10 +163,12 @@ function viewRuesten(v){
         <small>${esc(j.kunde)} · ${esc(j.format)||"Format ?"} · ${esc(j.dicke)?esc(j.dicke)+" mm":""} ${j.photos&&j.photos.length?"· 📷"+j.photos.length:""}</small>
         <small>Geändert ${new Date(j.updated).toLocaleDateString("de-DE")}${(j.ruestzeiten||[]).length?" · ⏱️ Ø "+durTxt(avg(j.ruestzeiten.map(r=>r.dur))):""}</small></div><div class="go">›</div></div>`).join("")
       : `<div class="empty">Nichts gefunden.</div>`}</div>
-    <button class="btn fox" id="newJob">＋ Neuer Artikel</button>`;
+    <button class="btn fox" id="newJob">＋ Neuer Artikel</button>
+    <button class="btn" id="gSimBtn">🎬 Neuen Auftrag simulieren</button>`;
   const q = v.querySelector("#q");
   q.oninput = () => { jobFilter = q.value; const pos=q.selectionStart; render(); const n=document.getElementById("q"); n.focus(); n.setSelectionRange(pos,pos); };
   v.querySelectorAll(".item").forEach(el => el.onclick = () => openJob(el.dataset.id));
+  v.querySelector("#gSimBtn").onclick = () => { SUB="gsim"; gTab="ruesten"; gDone={}; gRun=null; render(); scrollTo(0,0); };
   v.querySelector("#newJob").onclick = () => {
     const j = {id:uid(), kunde:"", artikel:"", format:"", dicke:"", speed:"", leerhuebe:"", einschub:true, bremsbuerste:false, notiz:"", values:{}, extra:{}, photos:[], history:[], ruestzeiten:[], created:Date.now(), updated:Date.now(), used:Date.now(), _new:true};
     DB.jobs.push(j); SUB = j.id; render(); scrollTo(0,0);
@@ -958,6 +962,188 @@ function viewPal(v){
   v.querySelector("#palSim").onclick = () => { SUB="palsim"; render(); scrollTo(0,0); };
   v.querySelector("#palGuide").onclick = () => { SUB="guide"; guideSel=[1,0]; render(); scrollTo(0,0); };
   v.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { palSel=+b.dataset.st; render(); document.getElementById("stInfo").scrollIntoView({behavior:"smooth", block:"center"}); });
+}
+
+/* ---------- Stanze-Simulation: neuer Auftrag ---------- */
+let GJ = {kunde:"", artikel:"", format:"", dicke:"", speed:"3300", menge:"5000", bpb:"", anst:true};
+let gTab = "ruesten", gDone = {}, gRun = null;
+const fmtParse = f => { const m = String(f||"").replace(/,/g,".").match(/(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)/i); return m ? [parseFloat(m[1]), parseFloat(m[2])] : null; };
+const mm = n => fmt(n, n%1?1:0);
+function gSimilar(){
+  const d = num(GJ.dicke); if(!d) return null;
+  return DB.jobs.filter(j => j.artikel && j.artikel!==GJ.artikel && num(j.dicke)!=null && (j.values.st_spalt_as || j.values.st_druck))
+    .sort((a,b) => Math.abs(num(a.dicke)-d) - Math.abs(num(b.dicke)-d))[0] || null;
+}
+function gChecks(){
+  const out = [], F = fmtParse(GJ.format), d = num(GJ.dicke), sp = num(GJ.speed), bpb = num(GJ.bpb), me = num(GJ.menge);
+  if(!F) out.push(["warn","Format als „Länge x Breite“ eintragen, z. B. 1235 x 1268."]);
+  else { if(Math.min(...F) < 500) out.push(["bad",`Format ${GJ.format}: kleiner als ca. 500 mm – unter dem Mindestformat der G-Cut.`]);
+         if(Math.max(...F) > 2100) out.push(["bad",`Format ${GJ.format}: größer als 2100 mm – über dem Maximalformat der G-Cut.`]); }
+  if(sp && sp > 6500) out.push(["bad",`Geschwindigkeit ${fmt(sp)}/h: Maximum der G-Cut ist 6500/h.`]);
+  if(bpb && d){ const h = bpb*d; out.push([h>=50&&h<=410?"ok":"bad",`Bündelhöhe ${mm(h)} mm (${fmt(bpb)} × ${GJ.dicke} mm) – erlaubt 50–410 mm.`]); }
+  if(sp && me) out.push(["ok",`Laufzeit ohne Störungen: ca. ${durTxt(me/sp*3600e3)} für ${fmt(me)} Bogen.`]);
+  if(bpb && me) out.push(["ok",`${fmt(Math.ceil(me/bpb))} Bündel${me%bpb?` (letztes mit ${fmt(me%bpb)} Bogen)`:""}.`]);
+  const ex = DB.jobs.find(j => j.artikel && j.artikel===GJ.artikel);
+  if(ex) out.push(["ok",`Artikel ${GJ.artikel} gibt es schon in Fox Stanze – Werte vom letzten Mal stehen bei den Schritten.`]);
+  return out;
+}
+function gSteps(){
+  const F = fmtParse(GJ.format), L = F?F[0]:null, B = F?F[1]:null;
+  const ex = DB.jobs.find(j => j.artikel && j.artikel===GJ.artikel), sim = ex || gSimilar(), V = sim ? sim.values : {};
+  const src = sim ? (ex ? `vom letzten Mal (Artikel ${sim.artikel})` : `von Artikel ${sim.artikel} (ähnliche Dicke ${sim.dicke} mm)`) : "";
+  const rw = (t) => `<span class="tag" style="background:rgba(242,140,40,.15);color:var(--fox)">${t}</span>`;
+  const val = (k, f) => V[k] ? `<b>${esc(V[k])}</b> ${src?`<span class="small">${src}</span>`:""}` : (f || "–");
+  return [
+    {img:"g-auftrag", t:"Auftrag anlegen", s:[`Auftrag › <b>Neuer Auftrag</b> (oder ähnlichen Artikel wählen › <b>Auftrag als Vorlage</b>).`,
+      `Eintragen: Kunde <b>${esc(GJ.kunde||"…")}</b>, Artikel <b>${esc(GJ.artikel||"…")}</b>, Format <b>${esc(GJ.format||"…")}</b>, Bogendicke <b>${esc(GJ.dicke||"…")} mm</b>.`, "Speichern."]},
+    {img:"g-auftrag", t:"Positionieren", s:["Auftrag in der Liste antippen (grün), dann <b>Positionieren</b>.", "Die Maschine fährt alle motorischen Achsen aufs Format. Warten, bis alles steht."]},
+    {img:"g-anleger", t:"Anleger prüfen", s:[
+      `Seitenführung AS/BS: ${ex&&V.anl_seitenf_as?val("anl_seitenf_as"):B?`Richtwert <b>±${mm(B/2)}</b> mm ${rw("halbe Breite")}`:"–"}`,
+      `Hinteranschlag: ${ex&&V.anl_hinteranschlag?val("anl_hinteranschlag"):L?`Richtwert <b>${mm(L)}</b> mm ${rw("= Länge")}`:"–"}`,
+      "Bogenstapel einlegen, Anschläge und Seitenführung am Stapel kontrollieren."]},
+    {img:"g-stanze", t:"Stanze: Werkzeug, Spalt, Druck", s:["Stanz- und Ausbrechwerkzeug wechseln (Pult an der Stanze: Werkzeug klemmen/lösen).",
+      `Spalt: Startwert ${val("st_spalt_as","aus der Maschine übernehmen")}`, `Druck: ${val("st_druck","–")} t`,
+      "Lieber etwas offener anfangen und beim Anstanzen in kleinen Schritten zustellen."]},
+    {img:"g-ausbrech", t:"Ausbrechstation", s:[`Seitenführungen: ${val("ab_seitenf_as","passend zum Werkzeug")}`, `Höhe Oberteil: ${val("ab_hoehe","–")}`, "Ausbrechstifte prüfen."]},
+    {img:"g-ablage", t:"Bogenablager", s:[
+      `Seitenführung: ${ex&&V.bl_seitenf_as?val("bl_seitenf_as"):B?`Richtwert <b>±${mm(B/2-8)}</b> mm ${rw("halbe Breite − 8")}`:"–"}`,
+      `Hinteranschlag: ${ex&&V.bl_hinten?val("bl_hinten"):L?`Richtwert <b>${mm(L-30)}</b> mm ${rw("Länge − 30")}`:"–"}`,
+      `Bogen pro Bündel: <b>${esc(GJ.bpb||"…")}</b>`]},
+    {img:"g-austransport", t:"Austransport", s:[`Band: ${val("au_band","–")}, Zeit: ${val("au_takt","–")}, Höhe: ${val("au_hoehe","–")}`]},
+    {img:"g-stopper", t:"Stopperüberwachung", s:["Alle Sensoren grün? Kontrollpunkte zum neuen Format passend?", `Kontrollpunkte: ${val("sp_kp1","–")} / ${val("sp_kp2","–")}`]},
+    {img:"g-produktion2", t:"Anstanzen & Produktion", s:["Schutztüren zu – „Sicherheit OK“ grün.", "<b>Anstanzen</b> an: Probebogen prüfen (durchgeschnitten, Rillen, Ausbruch komplett).",
+      `Geschwindigkeit <b>${esc(GJ.speed||"…")}</b>/h einstellen, Einschub Automatik an.`, "<b>Korrekturen speichern</b> – und das Rüstblatt in Fox Stanze."]},
+  ];
+}
+function viewGSim(v){
+  gStopAnim();
+  const tabs = [["ruesten","1. Rüsten"],["prod","2. Produktion"]];
+  const checks = gChecks();
+  v.innerHTML = `<button class="back" id="back">‹ Alle Artikel</button>
+    <div class="hero"><div class="big">🎬</div><small>Göpfert G-Cut</small><h1>Neuen Auftrag simulieren</h1><p>Daten eingeben, Schritt für Schritt rüsten und die Produktion durchspielen.</p></div>
+    <div class="card"><div class="row" style="margin-bottom:8px"><select id="gFrom"><option value="">Werte aus Artikel übernehmen …</option>${DB.jobs.filter(j=>j.artikel).map(j=>`<option value="${j.id}">Artikel ${esc(j.artikel)}</option>`).join("")}</select></div>
+      <div class="grid">
+        <label class="f"><span>Artikel</span><input data-g="artikel" value="${esc(GJ.artikel)}" inputmode="numeric"></label>
+        <label class="f"><span>Kunde</span><input data-g="kunde" value="${esc(GJ.kunde)}"></label>
+        <label class="f"><span>Format (L x B)</span><input data-g="format" value="${esc(GJ.format)}" placeholder="1235 x 1268"></label>
+        <label class="f"><span>Bogendicke</span><div class="unit"><input data-g="dicke" inputmode="decimal" value="${esc(GJ.dicke)}" placeholder="1,2"><em>mm</em></div></label>
+        <label class="f"><span>Geschwindigkeit</span><div class="unit"><input data-g="speed" inputmode="numeric" value="${esc(GJ.speed)}"><em>/h</em></div></label>
+        <label class="f"><span>Menge (Bogen)</span><input data-g="menge" inputmode="numeric" value="${esc(GJ.menge)}"></label>
+        <label class="f full"><span>Bogen pro Bündel</span><input data-g="bpb" inputmode="numeric" value="${esc(GJ.bpb)}" placeholder="52"></label>
+      </div></div>
+    <h2>Prüfung</h2>
+    <div class="card">${checks.length?checks.map(([k,t])=>`<div style="display:flex;gap:8px;margin:5px 0;font-size:14px;line-height:1.4"><span>${k==="ok"?"✅":k==="bad"?"⛔":"⚠️"}</span><span>${esc(t)}</span></div>`).join(""):`<div class="small">Daten eintragen …</div>`}</div>
+    <div class="chips">${tabs.map(([k,l])=>`<button class="chip ${gTab===k?"on":""}" data-gt="${k}">${l}</button>`).join("")}</div>
+    <div id="gBody"></div>
+    <button class="btn light" id="gSave">💾 Als Rüstblatt in Fox Stanze anlegen</button>
+    <p class="small" style="margin:8px 4px">Richtwerte (orange) sind aus Artikel 6040 abgeleitet (Seitenführung = halbe Breite, Hinteranschlag = Länge) – immer an der Maschine kontrollieren.</p>`;
+  const body = v.querySelector("#gBody");
+  if(gTab==="ruesten"){
+    const st = gSteps(); const n = st.filter((_,i)=>gDone[i]).length;
+    body.innerHTML = `<div class="card"><div class="prog"><i style="width:${n/st.length*100}%"></i></div><div class="small">${n} von ${st.length} Schritten erledigt</div></div>`
+      + st.map((x,i)=>`<div class="card" style="${gDone[i]?"opacity:.6":""}"><div class="row" style="align-items:flex-start;gap:10px">
+        <img src="img/bs/${x.img}.jpg" data-zi="${x.img}" style="flex:none;width:96px;height:66px;object-fit:cover;border-radius:10px">
+        <div style="flex:1"><b>${i+1}. ${esc(x.t)}</b><ul style="margin:5px 0 0 18px;font-size:14px;line-height:1.45">${x.s.map(y=>`<li>${y}</li>`).join("")}</ul></div></div>
+        <button class="chip ${gDone[i]?"on":""}" data-gd="${i}" style="margin-top:8px">${gDone[i]?"✓ Erledigt":"Erledigt abhaken"}</button></div>`).join("")
+      + `<button class="btn fox" id="toProd">▶️ Weiter zur Produktion</button>`;
+    body.querySelectorAll("[data-zi]").forEach(im => im.onclick = () => zoomImg(`img/bs/${im.dataset.zi}.jpg`));
+    body.querySelectorAll("[data-gd]").forEach(b => b.onclick = () => { gDone[b.dataset.gd] = !gDone[b.dataset.gd]; render(); });
+    body.querySelector("#toProd").onclick = () => { gTab="prod"; render(); };
+  } else gProd(body);
+  v.querySelector("#back").onclick = () => { gStopAnim(); SUB=null; render(); scrollTo(0,0); };
+  v.querySelectorAll("[data-gt]").forEach(b => b.onclick = () => { gTab=b.dataset.gt; render(); });
+  v.querySelectorAll("[data-g]").forEach(i => i.onchange = () => { GJ[i.dataset.g] = i.value.trim(); gRun=null; render(); });
+  v.querySelector("#gFrom").onchange = e => { const j = DB.jobs.find(x=>x.id===e.target.value); if(!j) return;
+    Object.assign(GJ, {artikel:j.artikel, kunde:j.kunde||"", format:j.format||"", dicke:j.dicke||"", speed:j.speed||GJ.speed, bpb:j.buendel||""}); gRun=null; render(); };
+  v.querySelector("#gSave").onclick = () => {
+    if(!GJ.artikel){ toast("Bitte Artikel eintragen"); return; }
+    const ex = DB.jobs.find(j=>j.artikel===GJ.artikel);
+    if(ex){ openJob(ex.id); toast("Artikel gibt es schon – Rüstblatt geöffnet"); return; }
+    const j = {id:uid(), kunde:GJ.kunde, artikel:GJ.artikel, format:GJ.format, dicke:GJ.dicke, speed:GJ.speed, leerhuebe:"", buendel:GJ.bpb, einschub:true, bremsbuerste:false,
+      notiz:"Aus der Simulation angelegt – Werte an der Maschine eintragen.", values:{}, extra:{}, photos:[], history:[], ruestzeiten:[], created:Date.now(), updated:Date.now(), used:Date.now()};
+    j.history.push(snapshot(j)); DB.jobs.push(j); save(); openJob(j.id); toast("Rüstblatt angelegt ✓");
+  };
+}
+/* Seitenansicht mit Animation */
+let gAnim = null;
+function gStopAnim(){ if(gAnim){ cancelAnimationFrame(gAnim.raf); gAnim.raf = null; gAnim.on = false; } }
+function gProd(body){
+  const sp = num(GJ.speed)||3300, me = num(GJ.menge)||1000, bpb = num(GJ.bpb)||50, d = num(GJ.dicke)||1.5;
+  gRun ||= {done:0, phase:0, tempo:3, anst:GJ.anst, waiting:false};
+  body.innerHTML = `<div class="card" id="gBox" style="padding:10px">
+    <div style="position:relative;height:190px;background:linear-gradient(#eef3fb,#dfe7f4);border-radius:12px;overflow:hidden">
+      <div style="position:absolute;left:1%;bottom:22px;width:16%;text-align:center;font-size:10px;font-weight:700">ANLEGER<div id="gFeed" style="margin:2px auto 0;width:80%;background:#d8b77a;border:1px solid #9c7a3f;border-radius:2px"></div></div>
+      <div style="position:absolute;left:22%;top:8px;width:16%;text-align:center;font-size:10px;font-weight:700">STANZE</div>
+      <div id="gTop" style="position:absolute;left:22%;top:24px;width:16%;height:46px;background:#5d6b88;border-radius:4px;transition:top .12s"></div>
+      <div style="position:absolute;left:22%;bottom:22px;width:16%;height:40px;background:#5d6b88;border-radius:4px"></div>
+      <div style="position:absolute;left:43%;top:8px;width:14%;text-align:center;font-size:10px;font-weight:700">AUSBRECHEN</div>
+      <div id="gStrip" style="position:absolute;left:46%;top:40px;width:8%;height:30px;background:#7a8aa6;border-radius:3px;transition:top .12s"></div>
+      <div style="position:absolute;left:62%;bottom:22px;width:15%;text-align:center;font-size:10px;font-weight:700">ABLAGE<div id="gStack" style="margin:2px auto 0;width:80%;background:#f1dcae;border:1px solid #b99a62;border-radius:2px;height:0"></div></div>
+      <div style="position:absolute;left:79%;bottom:22px;width:20%;text-align:center;font-size:9px;font-weight:700">AUS-TRANSPORT<div id="gOut" style="height:24px;position:relative"></div></div>
+      <div style="position:absolute;left:0;right:0;bottom:16px;height:6px;background:#9aa6bd"></div>
+      <div id="gSheet" style="position:absolute;bottom:64px;width:12%;height:5px;background:#c98a2b;border-radius:2px"></div>
+    </div>
+    <div class="stats" style="margin-top:10px">${[["gCnt","Bogen"],["gBnd","Bündel"],["gTime","Maschinenzeit"]].map(([i,l])=>`<div style="background:var(--chip);color:var(--text)"><b id="${i}">0</b><span>${l}</span></div>`).join("")}</div>
+    <div class="prog"><i id="gProg"></i></div>
+    <div id="gMsg" style="font-size:15px;line-height:1.4;min-height:42px;margin:6px 2px"></div>
+    <div id="gAsk"></div>
+    <div class="row" style="gap:6px">
+      <button class="btn light sm" id="gMinus" style="flex:none;width:44px">−</button><div class="small" style="text-align:center" id="gTempo"></div>
+      <button class="btn light sm" id="gPlus" style="flex:none;width:44px">+</button>
+      <button class="btn sm" id="gPlay" style="flex:none;width:52px">▶</button>
+      <button class="btn light sm" id="gEnd" style="flex:none;width:52px">⏭</button>
+      <button class="btn light sm" id="gReset" style="flex:none;width:52px">↺</button></div>
+    <div class="tog"><span>Mit Anstanzen beginnen</span><label class="sw"><input type="checkbox" id="gAnst" ${GJ.anst?"checked":""}><span></span></label></div></div>`;
+  const R = gRun, $ = id => document.getElementById(id);
+  const draw = () => {
+    const t = R.phase, x = 3 + t*72;
+    $("gSheet").style.left = x+"%"; $("gSheet").style.opacity = R.done>=me ? 0 : 1;
+    const press = t>0.24 && t<0.36; $("gTop").style.top = press ? "60px" : "24px";
+    const strip = t>0.52 && t<0.62; $("gStrip").style.top = strip ? "62px" : "40px";
+    const inB = R.done % bpb; $("gStack").style.height = Math.min(90, inB/bpb*90)+"px";
+    $("gFeed").style.height = Math.max(4, 90*(1-R.done/me))+"px";
+    const bund = Math.floor(R.done/bpb);
+    $("gOut").innerHTML = [...Array(Math.min(4,bund))].map((_,i)=>`<div style="position:absolute;bottom:0;left:${8+i*22}%;width:18%;height:18px;background:#e2c48f;border:1px solid #b99a62;border-radius:2px"></div>`).join("");
+    $("gCnt").textContent = fmt(R.done); $("gBnd").textContent = fmt(bund);
+    $("gTime").textContent = durTxt(R.done/sp*3600e3);
+    $("gProg").style.width = Math.min(100, R.done/me*100)+"%";
+    $("gTempo").textContent = ["1 Bogen/Takt","5","25","100","500"][R.tempo-1].replace(/^(\d+)$/,"$1 Bogen/Takt");
+    $("gPlay").textContent = gAnim && gAnim.on ? "⏸" : "▶";
+    let msg = "";
+    if(R.done>=me) msg = `✅ Auftrag fertig: ${fmt(me)} Bogen in ${fmt(Math.ceil(me/bpb))} Bündeln, Maschinenzeit ca. ${durTxt(me/sp*3600e3)}.`;
+    else if(t<0.24) msg = "Anleger: Saugplatte holt den Bogen, Greifer übernehmen ihn.";
+    else if(t<0.4) msg = `Stanze: Tiegel schließt – schneiden und rillen${GJ.dicke?` (${GJ.dicke} mm)`:""}.`;
+    else if(t<0.66) msg = "Ausbrechstation: Abfall wird herausgedrückt, Greiferrand wird abgehackt.";
+    else msg = `Bogenablager: Bogen kommt aufs Bündel (${inB}/${bpb}).`;
+    $("gMsg").textContent = msg;
+  };
+  const ask = () => {
+    R.waiting = true; gStopAnim();
+    $("gAsk").innerHTML = `<div class="note" style="background:rgba(242,140,40,.13);border-left:4px solid var(--fox);padding:10px;border-radius:10px;font-size:14px;margin-bottom:8px"><b>Anstanzen – Probebogen prüfen:</b> durchgeschnitten? Rillen sauber? Ausbruch komplett? Bogen gerade?</div>
+      <div class="row" style="gap:6px"><button class="btn sm" id="gOk">✓ Passt – Produktion</button><button class="btn light sm" id="gFix">🛠️ Nicht gut</button></div>`;
+    $("gOk").onclick = () => { R.waiting=false; R.anst=false; $("gAsk").innerHTML=""; start(); };
+    $("gFix").onclick = () => { SUB="fehler"; TAB="wissen"; fehlerB="Stanze"; gStopAnim(); render(); scrollTo(0,0); };
+  };
+  const step = (ts) => {
+    if(!$("gBox")){ gStopAnim(); return; }
+    const dt = Math.min(100, ts - (gAnim.last||ts)); gAnim.last = ts;
+    R.phase += dt / (R.anst ? 1800 : [900,700,500,350,250][R.tempo-1]);
+    if(R.phase >= 1){
+      R.phase = 0;
+      R.done = Math.min(me, R.done + (R.anst ? 1 : [1,5,25,100,500][R.tempo-1]));
+      if(R.anst && R.done>=1){ draw(); ask(); return; }
+      if(R.done >= me){ draw(); gStopAnim(); draw(); toast("Simulation fertig ✓"); return; }
+    }
+    draw(); gAnim.raf = requestAnimationFrame(step);
+  };
+  const start = () => { if(R.done>=me) Object.assign(R,{done:0,phase:0,anst:GJ.anst}); gAnim = {on:true, last:0}; gAnim.raf = requestAnimationFrame(step); draw(); };
+  $("gPlay").onclick = () => { if(R.waiting) return; if(gAnim && gAnim.on){ gStopAnim(); draw(); } else start(); };
+  $("gReset").onclick = () => { gStopAnim(); Object.assign(R,{done:0,phase:0,anst:GJ.anst,waiting:false}); $("gAsk").innerHTML=""; draw(); };
+  $("gEnd").onclick = () => { gStopAnim(); R.anst=false; R.waiting=false; $("gAsk").innerHTML=""; R.done = me; R.phase=0; draw(); };
+  $("gMinus").onclick = () => { R.tempo = Math.max(1, R.tempo-1); draw(); };
+  $("gPlus").onclick = () => { R.tempo = Math.min(5, R.tempo+1); draw(); };
+  $("gAnst").onchange = e => { GJ.anst = e.target.checked; R.anst = GJ.anst && R.done===0; };
+  draw();
 }
 
 /* ---------- Corrpal-Simulation ---------- */
