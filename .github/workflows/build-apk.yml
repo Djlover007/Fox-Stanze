@@ -51,6 +51,9 @@ jobs:
           cp native/*.java "$JAVA_DIR/"
           MANIFEST=android/app/src/main/AndroidManifest.xml
           grep -q POST_NOTIFICATIONS "$MANIFEST" || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' "$MANIFEST"
+          grep -q REQUEST_INSTALL_PACKAGES "$MANIFEST" || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n</manifest>#' "$MANIFEST"
+          grep -n "REQUEST_INSTALL_PACKAGES" "$MANIFEST"
+          grep -rq "cache-path" android/app/src/main/res/xml/ || { echo "cache-path fehlt in file_paths.xml"; exit 1; }
           grep -n "mlkit" "$GRADLE"
           grep -n "POST_NOTIFICATIONS" "$MANIFEST"
 
@@ -61,12 +64,18 @@ jobs:
       - name: APK umbenennen
         run: cp android/app/build/outputs/apk/debug/app-debug.apk Fox-Stanze.apk
 
+      - name: Release-Text aus der Commit-Nachricht
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: printf '%s\n' "$MSG" > notes.txt
+
       - name: Release veröffentlichen
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: Fox Stanze ${{ github.run_number }}
           files: Fox-Stanze.apk
+          body_path: notes.txt
 
       - name: APK auch als Artifact ablegen
         uses: actions/upload-artifact@v4

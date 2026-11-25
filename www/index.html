@@ -170,6 +170,38 @@ details.sec .body{padding:12px 14px 14px}
 .qrbox svg{width:220px;height:220px}
 .spin{display:inline-block;width:22px;height:22px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;vertical-align:middle}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+.stoer2{display:flex;gap:6px;margin:-3px 0 12px}
+.stoer2 input{font-size:14px;padding:7px 9px}
+.stoer2 input:first-child{flex:0 0 38%}
+.ib.on{background:var(--fox);color:#fff}
+/* Handschuh-Modus */
+html.big{--muted:#3d4a66}
+html.big[data-theme=dark]{--muted:#c9d5ee}
+html.big body{font-size:18px;padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+html.big .btn{padding:18px;font-size:19px;border-radius:16px}
+html.big .btn.sm{padding:14px 10px;font-size:17px}
+html.big input,html.big select,html.big textarea{font-size:19px;padding:14px 12px}
+html.big label.f>span{font-size:15px;font-weight:600}
+html.big .item{padding:17px 16px}
+html.big .item b{font-size:20px}
+html.big .item small{font-size:15px}
+html.big .tabs button{font-size:14px;padding:10px 0}
+html.big .tabs button i{font-size:30px}
+html.big .chip{padding:12px 17px;font-size:17px}
+html.big .ib{min-width:52px;height:52px;font-size:24px}
+html.big details.sec summary{padding:19px 16px;font-size:19px}
+html.big .small,html.big .hint{font-size:15px}
+html.big .sw{width:64px;height:38px}
+html.big .sw span:before{width:32px;height:32px}
+html.big .sw input:checked+span:before{transform:translateX(26px)}
+html.big .qopt{padding:17px;font-size:18px}
+html.big .topic p,html.big .topic ul{font-size:17px}
+html.big .stoer button,html.big .extra button{width:54px;height:54px}
+html.big .sticky{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+html.big .back{font-size:19px;padding:8px 2px 14px}
+html.big h2{font-size:15px}
+html.big .brandbar b small{display:none}
 </style>
 </head>
 <body>
@@ -177,6 +209,7 @@ details.sec .body{padding:12px 14px 14px}
   <div class="brandbar">
     <svg class="fx" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 6 L15 15 L25 15 L34 6 L33 22 Q30 33 20 35 Q10 33 7 22 Z" fill="#f28c28"/><path d="M12 22 Q20 33 28 22 Q24 29 20 29 Q16 29 12 22 Z" fill="#fff4e8"/><rect x="7" y="17" width="26" height="2" rx="1" fill="#5a3416"/><circle cx="15" cy="19" r="3.4" fill="#5a3416"/><circle cx="25" cy="19" r="3.4" fill="#5a3416"/><circle cx="15" cy="19" r="2.4" fill="#9fdcff"/><circle cx="25" cy="19" r="2.4" fill="#9fdcff"/><circle cx="20" cy="28" r="1.6" fill="#2a1640"/></svg>
     <b>Fox Stanze<small>Göpfert Flachbettstanze · Rüsten &amp; Schicht</small></b>
+    <button class="ib" id="btnBig" title="Handschuh-Modus">🧤</button>
     <button class="ib" id="btnTheme" title="Hell/Dunkel">🌙</button>
     <button class="ib" id="btnMenu" title="Sichern &amp; Export">⋯</button>
   </div>

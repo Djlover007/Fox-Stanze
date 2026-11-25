@@ -18,7 +18,7 @@ const capCall = (plugin, method, opts) => NATIVE ? CAP.nativePromise(plugin, met
 const fmt = (n, d=0) => n == null || isNaN(n) ? "–" : n.toLocaleString("de-DE",{minimumFractionDigits:d, maximumFractionDigits:d});
 const today = () => { const d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const dDE = iso => iso ? iso.split("-").reverse().join(".") : "";
-function toast(t){ const el=document.createElement("div"); el.className="toast"; el.textContent=t; document.body.appendChild(el); setTimeout(()=>el.remove(),2200); }
+function toast(t, ms){ const el=document.createElement("div"); el.className="toast"; el.textContent=t; document.body.appendChild(el); setTimeout(()=>el.remove(), ms||2200); }
 
 /* ===================== Rüstblatt-Aufbau ===================== */
 /* Felder angelehnt an die Bildschirme der Göpfert-Bedienung. AS = Antriebsseite, BS = Bedienseite. */
@@ -124,6 +124,7 @@ document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { TAB =
 function render(){
   if(typeof simStop==="function" && SUB!=="palsim") simStop();
   if(typeof gStopAnim==="function" && SUB!=="gsim") gStopAnim();
+  if(typeof gAllStop==="function" && SUB!=="gsim"){ gAllStop(); if(typeof gAllS!=="undefined" && gAllS) gAllS.run = false; }
   if(typeof gPalStop==="function") gPalStop();
   document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === TAB));
   const v = document.getElementById("view");
@@ -179,6 +180,7 @@ function viewRuesten(v){
     toast("QR-Code wird gelesen …");
     const code = await readQR(f);
     if(!code){ toast("Kein QR-Code erkannt – näher ran und scharf stellen"); return; }
+    if(/^FOXJOB1:/.test(code)){ importData(code); return; }
     const art = code.replace(/^FOXSTANZE:/i,"").trim();
     const j = DB.jobs.find(x => x.artikel === art);
     if(j) openJob(j.id);
@@ -250,6 +252,7 @@ function viewJob(v, id){
           <div>${idx===0?"Erste Version":d.length?d.slice(0,8).map(x=>`${esc(x.l)}: <s>${esc(x.alt||"leer")}</s> → <b>${esc(x.neu||"leer")}</b>`).join("<br>")+(d.length>8?`<br>+${d.length-8} weitere`:""):"keine Wertänderung"}</div>
           ${idx<j.history.length-1?`<button data-restore="${idx}">↩︎ Diese Version wiederherstellen</button>`:""}</div>`; }).join("")}</div>
     <button class="btn light" id="pdfJob">📄 Rüstblatt als PDF</button>
+    <button class="btn light" id="shJob">📤 An Kollegen schicken</button>
     <button class="btn light" id="qrJob">▦ QR-Etikett für Werkzeug / Auftrag</button>
     <button class="btn light" id="copyJob">⧉ Als neuen Artikel kopieren</button>
     <button class="btn light" id="shiftFrom">📋 Schicht für diesen Artikel eintragen</button>
@@ -291,6 +294,7 @@ function viewJob(v, id){
   v.querySelector("#shiftFrom").onclick = () => { if(!doSave(true)) return; TAB="schicht"; SUB="new:"+j.artikel; render(); scrollTo(0,0); };
   v.querySelector("#pdfJob").onclick = () => { if(!doSave(true)) return; pdfJob(j); };
   v.querySelector("#qrJob").onclick = () => { if(!doSave(true)) return; qrLabel(j); };
+  v.querySelector("#shJob").onclick = () => { if(!doSave(true)) return; shareJob(j); };
   v.querySelector("#timerBtn").onclick = () => {
     collect();
     if(running){ const dur = Date.now()-DB.timer.start; j.ruestzeiten.push({start:DB.timer.start, dur}); DB.timer=null; doSave(true); toast("Rüstzeit: "+durTxt(dur)); }
@@ -425,7 +429,7 @@ function viewSchicht(v){
       const sm = (s.stoer||[]).reduce((b,x)=>b+(num(x.min)||0),0);
       return `<div class="item" data-id="${s.id}" style="border-left-color:var(--green)"><div class="t"><b>${dDE(s.datum)} · ${esc(s.schicht)}</b>
         <small>Artikel ${esc(s.artikel)||"–"} · ${fmt(num(s.stueck))} Bogen${s.ausstoss?" · "+fmt(num(s.ausstoss))+"/h":""}</small>
-        ${(s.stoer||[]).length?`<div>${s.stoer.slice(0,3).map(x=>`<span class="tag w">${esc(x.t)}${x.min?" "+esc(x.min)+"′":""}</span>`).join("")}${s.stoer.length>3?`<span class="tag">+${s.stoer.length-3}</span>`:""}</div>`:""}
+        ${(s.stoer||[]).length?`<div>${s.stoer.slice(0,3).map(x=>`<span class="tag w">${esc(x.t)}${x.min?" "+esc(x.min)+"′":""}${x.nr?" #"+esc(x.nr):""}</span>`).join("")}${s.stoer.length>3?`<span class="tag">+${s.stoer.length-3}</span>`:""}</div>`:""}
       </div><div class="go">›</div></div>`; }).join("") : `<div class="empty">Noch keine Schicht eingetragen.</div>`}`;
   v.querySelector("#newShift").onclick = () => { SUB="new:"; render(); scrollTo(0,0); };
   v.querySelector("#stats").onclick = () => { SUB="stats"; render(); scrollTo(0,0); };
@@ -490,7 +494,9 @@ function viewShift(v, id){
     </div>
     <h2>Störungen / Meldungen <span>Minuten</span></h2>
     <div class="card">
-      <div id="stoerList">${(s.stoer||[]).map((x,i)=>`<div class="stoer"><input data-st="${i}" data-p="t" value="${esc(x.t)}" placeholder="Was war los?"><input class="min" data-st="${i}" data-p="min" value="${esc(x.min)}" inputmode="numeric" placeholder="Min"><button data-sdel="${i}">✕</button></div>`).join("")}</div>
+      <div id="stoerList">${(s.stoer||[]).map((x,i)=>`<div class="stoer"><input data-st="${i}" data-p="t" value="${esc(x.t)}" placeholder="Was war los?"><input class="min" data-st="${i}" data-p="min" value="${esc(x.min)}" inputmode="numeric" placeholder="Min"><button data-sdel="${i}">✕</button></div>
+        <div class="stoer2"><input data-st="${i}" data-p="nr" value="${esc(x.nr)}" inputmode="numeric" placeholder="Meldungs-Nr."><input data-st="${i}" data-p="sp" value="${esc(x.sp)}" placeholder="Schaltplan, z. B. FDC|30,1|B30"></div>`).join("")}</div>
+      <div class="small" style="margin:2px 2px 8px">Nr. und Schaltplan stehen im Bildschirm „Meldungen“ rechts – hilft dem Elektriker.</div>
       <div class="small" style="margin:4px 2px 6px">Schnell hinzufügen:</div>
       <div class="chips">${STOER_VORLAGEN.map(t=>`<button class="chip" data-quick="${esc(t)}">${esc(t)}</button>`).join("")}</div>
       <button class="addx" id="addStoer">＋ Eigene Störung</button>
@@ -509,13 +515,13 @@ function viewShift(v, id){
   v.querySelector("#addStoer").onclick = () => { collect(); s.stoer.push({t:"",min:""}); render(); const t=v.querySelectorAll('#stoerList [data-p="t"]'); t[t.length-1]?.focus(); };
   v.querySelectorAll("[data-sdel]").forEach(b => b.onclick = () => { collect(); s.stoer.splice(+b.dataset.sdel,1); render(); });
   v.querySelector("#back").onclick = () => { collect(); if(s._new && !s.stueck && !s.stoer.length && !s.notiz) DB.shifts = DB.shifts.filter(x=>x!==s); else { delete s._new; save(); } SUB=null; render(); scrollTo(0,0); };
-  v.querySelector("#saveShift").onclick = () => { collect(); s.stoer = s.stoer.filter(x=>x.t||x.min); delete s._new; if(save()) toast("Gespeichert ✓"); SUB=null; render(); scrollTo(0,0); };
+  v.querySelector("#saveShift").onclick = () => { collect(); s.stoer = s.stoer.filter(x=>x.t||x.min||x.nr||x.sp); delete s._new; if(save()) toast("Gespeichert ✓"); SUB=null; render(); scrollTo(0,0); };
   v.querySelector("#delShift").onclick = () => confirmBox("Schicht-Eintrag löschen?", () => { DB.shifts = DB.shifts.filter(x=>x!==s); save(); SUB=null; render(); });
   v.querySelector("#shareShift").onclick = () => {
     collect();
     const sm = s.stoer.reduce((b,x)=>b+(num(x.min)||0),0);
     const txt = `Schichtübergabe ${dDE(s.datum)} (${s.schicht})\nArtikel: ${s.artikel||"–"}\nBogen: ${s.stueck||"–"}${s.ausstoss?` · Ausstoß ${s.ausstoss}/h`:""}${s.speed?` · eingestellt ${s.speed}/h`:""}\n`+
-      (s.stoer.length?`Störungen (${sm} Min):\n`+s.stoer.filter(x=>x.t).map(x=>`- ${x.t}${x.min?` (${x.min} Min)`:""}`).join("\n")+"\n":"Keine Störungen\n")+
+      (s.stoer.length?`Störungen (${sm} Min):\n`+s.stoer.filter(x=>x.t).map(x=>`- ${x.t}${x.min?` (${x.min} Min)`:""}${x.nr?` · Nr. ${x.nr}`:""}${x.sp?` · Schaltplan ${x.sp}`:""}`).join("\n")+"\n":"Keine Störungen\n")+
       (s.notiz?`Notiz: ${s.notiz}\n`:"");
     copy(txt);
   };
@@ -603,9 +609,18 @@ const TOPICS = [
     <ul><li><b>NOT-HALT</b> (roter Pilz) stoppt sofort alles.</li><li>Nie in die Maschine greifen, solange sie nicht gesichert ist.</li><li>Meldungen wie „Greiferrandzerhacker Antriebsseite geöffnet“ bedeuten: eine Schutzeinrichtung ist offen – erst schließen, dann starten.</li><li>Beim Werkzeugwechsel Maschine sichern, wie im Betrieb vorgeschrieben.</li></ul>`},
 ];
 const QUIZ = [
-  {q:"Was macht der „Separator“ (BS1/BS2) am Palettierer?", o:["Er klebt Bogen","Er bricht die Bündel an den Haltepunkten in einzelne Nutzen-Stapel","Er zählt Paletten","Er wickelt Folie"], a:1, e:"Breaker/Separator = Brecher. „Zyklen Brecher 1/2“ stellst du im Auftrag ein."},
-  {q:"Wofür sind Zwischenbogen auf der Palette?", o:["Für die Optik","Für Stabilität beim Transport","Zum Zählen","Gegen Feuchtigkeit vom Boden"], a:1, e:"Zwischenbogen zwischen den Lagen halten die Palette zusammen."},
-  {q:"Bündelhöhe 138 mm, 10 Lagen – wie hoch ist der Stapel?", o:["138 mm","1380 mm","13,8 mm","1518 mm"], a:1, e:"138 × 10 = 1380 mm, plus Palette (z. B. 150 mm)."},
+  {k:"p", q:"Was macht TT1 (Drehtisch) laut Schrittliste?", o:["Er bricht die Bündel","Er dreht den Stapel um 90° (Rotate −90°)","Er legt Zwischenbogen","Er hebt die Palette"], a:1, e:"Infeed → Rotate −90° → Outfeed. Den Winkel wählst du in der Korrektur."},
+  {k:"p", q:"Bei AC2 steht „Outfeed Conveyor 2  −1274“. Was heißt das Minus?", o:["Fehler in der Steuerung","Das Band fährt in die andere Richtung","Der Stapel ist zu kurz","Die Station ist aus"], a:1, e:"Negative Werte = andere Laufrichtung des Bandes."},
+  {k:"p", q:"In der BS2-Schrittliste fehlt der Schritt „Break“. Was bedeutet das?", o:["BS2 ist kaputt","BS2 bricht bei diesem Auftrag nicht – die Stapel laufen nur durch","BS2 bricht doppelt","Der Auftrag ist fertig"], a:1, e:"Nur wenn im Auftrag Zyklen für Brecher 2 eingestellt sind, steht dort ein Break-Schritt."},
+  {k:"p", q:"Welche Station wendet ganze Lagen?", o:["APC1","LI1 Layer Inverter","TT1","DIS1"], a:1, e:"LI1: Infeed → Turn Over (Trommel dreht) → Outfeed."},
+  {k:"p", q:"Wo werden die Stapel zur Lage zusammengeschoben?", o:["In APC1 mit dem SidePusher","Im Bogenableger der Stanze","In CV2","In BS1"], a:0, e:"APC1: FrontStop hoch → Stapel rein → SidePusher aufs Lagenmaß → FrontStop runter → raus."},
+  {k:"p", q:"Was macht der Knopf „PAL Räumen“?", o:["Löscht den Auftrag","Fährt nur den Palettierer leer","Startet die Simulation","Schaltet die Zwischenbogen ab"], a:1, e:"„Räumen“ fährt die ganze Anlage leer, „PAL Räumen“ nur den Palettierer."},
+  {k:"p", q:"Stk/Stpl 590, 59 Bogen pro Bündel – wie viele Lagen pro Palette?", o:["5","10","59","4"], a:1, e:"590 ÷ 59 = 10 Lagen."},
+  {k:"p", q:"Was bedeutet der grüne Punkt „Daten von Steuerung übernommen“?", o:["Die Werte kommen aus dem Auftrag","Die Tür ist zu","Der Not-Halt ist gedrückt","Die Palette ist voll"], a:0, e:"Die Schrittliste wurde aus dem aktuellen Auftrag erzeugt."},
+  {k:"p", q:"Wofür ist „Reintegration“?", o:["Neuen Auftrag anlegen","Anlagenteile nach dem Öffnen einer Schutztür wieder in den Sicherheitskreis aufnehmen","Sprache wechseln","Palette drehen"], a:1, e:"Tür schließen bzw. Not-Halt entriegeln, dann Reintegration."},
+  {k:"p", q:"Was macht der „Separator“ (BS1/BS2) am Palettierer?", o:["Er klebt Bogen","Er bricht die Bündel an den Haltepunkten in einzelne Nutzen-Stapel","Er zählt Paletten","Er wickelt Folie"], a:1, e:"Breaker/Separator = Brecher. „Zyklen Brecher 1/2“ stellst du im Auftrag ein."},
+  {k:"p", q:"Wofür sind Zwischenbogen auf der Palette?", o:["Für die Optik","Für Stabilität beim Transport","Zum Zählen","Gegen Feuchtigkeit vom Boden"], a:1, e:"Zwischenbogen zwischen den Lagen halten die Palette zusammen."},
+  {k:"p", q:"Bündelhöhe 138 mm, 10 Lagen – wie hoch ist der Stapel?", o:["138 mm","1380 mm","13,8 mm","1518 mm"], a:1, e:"138 × 10 = 1380 mm, plus Palette (z. B. 150 mm)."},
   {q:"Was bedeutet „Mada“ im Maschinen-Menü?", o:["Material-Datenbank","Maschinendaten – Grundeinstellungen je Aggregat","Manuelle Daten","Maßangaben"], a:1, e:"Mada = Maschinendaten. Nur mit Befugnis ändern."},
   {q:"Welche Farbe hat bei Drucktastern nach EN 60204-1 meist „Zurücksetzen/Quittieren“?", o:["Rot","Gelb","Blau","Grün"], a:2, e:"Blau steht für eine Handlung, die nötig ist – z. B. Reset nach dem Schließen einer Schutztür."},
   {q:"Wie hoch darf ein Bündel laut Mada maximal sein?", o:["100 mm","410 mm","1000 mm","50 mm"], a:1, e:"Min. 50 mm, max. 410 mm (Stand 19.11.)."},
@@ -635,7 +650,7 @@ function viewWissen(v){
   v.innerHTML = `
     <div class="hero or"><div class="big">📖</div><small>Wissen & Schulung</small><h1>Die Stanze verstehen</h1>
       <p>Für dich und für Azubis – mit eigenen Notizen pro Thema.</p></div>
-    <button class="btn" id="startQuiz" style="margin-bottom:12px">🎯 Quiz starten (${QUIZ.length} Fragen)${DB.quizBest?` · Bestwert ${DB.quizBest}/${QUIZ.length}`:""}</button>
+    <button class="btn" id="startQuiz" style="margin-bottom:12px">🎯 Quiz starten – Stanze &amp; Palettierer (${QUIZ.length} Fragen)</button>
     <div class="item" id="goGuide" style="border-left-color:var(--green)"><div class="t"><b>📸 Bedienanleitung mit Fotos</b><small>${GUIDE.reduce((a,g)=>a+g.items.length,0)} Bildschirme Schritt für Schritt – Stanze &amp; Palettierer</small></div><div class="go">›</div></div>
     <div class="item" id="goPal" style="border-left-color:#7b2fd1"><div class="t"><b>🧱 Palettierer Corrpal</b><small>Alle Stationen, Bildschirme, Auftragsfenster und Pult erklärt</small></div><div class="go">›</div></div>
     <div class="item" id="goPulte" style="border-left-color:var(--fox)"><div class="t"><b>🎛️ Bedienpulte &amp; Symbole</b><small>Jeder Knopf an den 3 Pulten erklärt – mit deinen Fotos</small></div><div class="go">›</div></div>
@@ -649,7 +664,17 @@ function viewWissen(v){
   v.querySelector("#goPulte").onclick = () => { SUB="pulte"; render(); scrollTo(0,0); };
   v.querySelector("#goCheck").onclick = () => { SUB="check"; render(); scrollTo(0,0); };
   v.querySelector("#goFehler").onclick = () => { SUB="fehler"; render(); scrollTo(0,0); };
-  v.querySelector("#startQuiz").onclick = () => { quiz = {i:0, score:0, order:[...QUIZ.keys()].sort(()=>Math.random()-.5), done:false, ans:null}; SUB="quiz"; render(); scrollTo(0,0); };
+  v.querySelector("#startQuiz").onclick = () => {
+    const nS = QUIZ.filter(q=>q.k!=="p").length, nP = QUIZ.filter(q=>q.k==="p").length, bb = DB.quizBests || {};
+    const m = modal(`<h3>🎯 Welches Quiz?</h3>
+      <button class="btn" data-qk="s">🔨 Stanze G-Cut (${nS})${bb.s?` · Bestwert ${bb.s}`:""}</button>
+      <button class="btn" data-qk="p" style="background:#7b2fd1">🧱 Palettierer Corrpal (${nP})${bb.p?` · Bestwert ${bb.p}`:""}</button>
+      <button class="btn light" data-qk="a">Alles gemischt (${QUIZ.length})${bb.a?` · Bestwert ${bb.a}`:""}</button>
+      <button class="btn light" data-close>Abbrechen</button>`);
+    m.querySelectorAll("[data-qk]").forEach(b => b.onclick = () => { m.remove(); const k = b.dataset.qk;
+      const list = [...QUIZ.keys()].filter(i => k==="a" || (k==="p" ? QUIZ[i].k==="p" : QUIZ[i].k!=="p"));
+      quiz = {k, i:0, score:0, order:list.sort(()=>Math.random()-.5), done:false, ans:null}; SUB="quiz"; render(); scrollTo(0,0); });
+  };
 }
 
 /* ---------- Bedienpulte / Symbol-Lexikon ---------- */
@@ -1174,10 +1199,12 @@ function gSteps(){
 }
 function viewGSim(v){
   gStopAnim();
-  const tabs = [["ruesten","1. Rüsten"],["prod","2. Stanzen"],["pal","3. Palette"]];
+  const tabs = [["ruesten","1. Rüsten"],["prod","2. Stanzen"],["pal","3. Palette"],["all","4. Gesamt"]];
   const checks = gChecks();
   v.innerHTML = `<button class="back" id="back">‹ Alle Artikel</button>
     <div class="hero"><div class="big">🎬</div><small>Göpfert G-Cut</small><h1>Neuen Auftrag simulieren</h1><p>Daten eingeben, Schritt für Schritt rüsten und die Produktion durchspielen.</p></div>
+    <div class="ocrbtns"><label class="btn fox sm">📷 Laufkarte fotografieren<input type="file" accept="image/*" capture="environment" id="lkCam" hidden></label>
+      <label class="btn light sm">🖼️ Aus Galerie<input type="file" accept="image/*" id="lkGal" hidden></label></div>
     <div class="card"><div class="row" style="margin-bottom:8px"><select id="gFrom"><option value="">Werte aus Artikel übernehmen …</option>${DB.jobs.filter(j=>j.artikel).map(j=>`<option value="${j.id}">Artikel ${esc(j.artikel)}</option>`).join("")}</select></div>
       <div class="grid">
         <label class="f"><span>Artikel</span><input data-g="artikel" value="${esc(GJ.artikel)}" inputmode="numeric"></label>
@@ -1220,13 +1247,14 @@ function viewGSim(v){
     body.querySelectorAll("[data-zi]").forEach(im => im.onclick = () => zoomImg(`img/bs/${im.dataset.zi}.jpg`));
     body.querySelectorAll("[data-gd]").forEach(b => b.onclick = () => { gDone[b.dataset.gd] = !gDone[b.dataset.gd]; render(); });
     body.querySelector("#toProd").onclick = () => { gTab="prod"; render(); };
-  } else if(gTab==="pal") gPalView(body); else gProd(body);
+  } else if(gTab==="pal") gPalView(body); else if(gTab==="all") gAll(body); else gProd(body);
+  ["lkCam","lkGal"].forEach(id => v.querySelector("#"+id).onchange = e => { const f = e.target.files[0]; if(f) lkScan(f); });
   v.querySelector("#back").onclick = () => { gStopAnim(); SUB=null; render(); scrollTo(0,0); };
   v.querySelectorAll("[data-gt]").forEach(b => b.onclick = () => { gTab=b.dataset.gt; render(); });
   v.querySelectorAll("[data-g]").forEach(i => i.onchange = () => { GJ[i.dataset.g] = i.value.trim(); GJ._lk = !!v.querySelector("#lkBox").open;
     if(!GJ.format && num(GJ.welle) && num(GJ.bogen)) GJ.format = `${GJ.welle} x ${GJ.bogen}`;
     const nu = (num(GJ.nl)||0)*(num(GJ.nq)||0); if(num(GJ.stueck) && nu) GJ.menge = String(Math.ceil(num(GJ.stueck)/nu));
-    gRun=null; gPal=null; render(); });
+    gRun=null; gPal=null; gAllS=null; render(); });
   v.querySelector("#gFrom").onchange = e => { const j = DB.jobs.find(x=>x.id===e.target.value); if(!j) return;
     Object.assign(GJ, {artikel:j.artikel, kunde:j.kunde||"", format:j.format||"", dicke:j.dicke||"", speed:j.speed||GJ.speed, bpb:j.buendel||""}); gRun=null; render(); };
   v.querySelector("#gSave").onclick = () => {
@@ -1688,23 +1716,24 @@ function viewTopic(v, id){
   v.querySelector("#saveNote").onclick = () => { const n=v.querySelector("#note").value.trim(); if(n) DB.notes[id]=n; else delete DB.notes[id]; save(); toast("Notiz gespeichert"); };
 }
 function viewQuiz(v){
+  const N = quiz.order.length;
   if(quiz.done){
     const p = quiz.score;
-    v.innerHTML = `<div class="hero ${p>=QUIZ.length*.75?"gr":"or"}"><div class="big">🏆</div><small>Ergebnis</small><h1>${p} von ${QUIZ.length} richtig</h1><p>${p===QUIZ.length?"Perfekt – Meister der Stanze!":p>=QUIZ.length*.75?"Sehr gut!":p>=QUIZ.length/2?"Gut, schau dir die Themen nochmal an.":"Lies die Themen durch und versuch es nochmal."}</p></div>
+    v.innerHTML = `<div class="hero ${p>=N*.75?"gr":"or"}"><div class="big">🏆</div><small>Ergebnis</small><h1>${p} von ${N} richtig</h1><p>${p===N?"Perfekt – Meister der Stanze!":p>=N*.75?"Sehr gut!":p>=N/2?"Gut, schau dir die Themen nochmal an.":"Lies die Themen durch und versuch es nochmal."}</p></div>
       <button class="btn" id="again">Nochmal</button><button class="btn light" id="back">Zurück zu Wissen</button>`;
-    v.querySelector("#again").onclick = () => { quiz = {i:0, score:0, order:[...QUIZ.keys()].sort(()=>Math.random()-.5), done:false, ans:null}; render(); };
+    v.querySelector("#again").onclick = () => { quiz = Object.assign(quiz, {i:0, score:0, order:quiz.order.sort(()=>Math.random()-.5), done:false, ans:null}); render(); };
     v.querySelector("#back").onclick = () => { SUB=null; render(); };
     return;
   }
   const Q = QUIZ[quiz.order[quiz.i]];
   v.innerHTML = `<button class="back" id="back">‹ Abbrechen</button>
-    <div class="card"><div class="small">Frage ${quiz.i+1} von ${QUIZ.length} · ${quiz.score} richtig</div>
+    <div class="card"><div class="small">Frage ${quiz.i+1} von ${N} · ${quiz.score} richtig</div>
     <h3 style="font-size:19px;margin:8px 0 12px">${esc(Q.q)}</h3>
     ${Q.o.map((o,i)=>`<button class="qopt ${quiz.ans!=null?(i===Q.a?"r":i===quiz.ans?"f":""):""}" data-o="${i}" ${quiz.ans!=null?"disabled":""}>${esc(o)}</button>`).join("")}
-    ${quiz.ans!=null?`<div class="qexp"><b>${quiz.ans===Q.a?"✅ Richtig!":"❌ Nicht ganz."}</b> ${esc(Q.e)}</div><button class="btn" id="next">${quiz.i+1<QUIZ.length?"Weiter":"Ergebnis"}</button>`:""}</div>`;
+    ${quiz.ans!=null?`<div class="qexp"><b>${quiz.ans===Q.a?"✅ Richtig!":"❌ Nicht ganz."}</b> ${esc(Q.e)}</div><button class="btn" id="next">${quiz.i+1<N?"Weiter":"Ergebnis"}</button>`:""}</div>`;
   v.querySelector("#back").onclick = () => { SUB=null; render(); };
   v.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { quiz.ans = +b.dataset.o; if(quiz.ans===Q.a) quiz.score++; render(); });
-  const n = v.querySelector("#next"); if(n) n.onclick = () => { quiz.i++; quiz.ans=null; if(quiz.i>=QUIZ.length){ quiz.done=true; if(quiz.score>DB.quizBest){DB.quizBest=quiz.score; save();} } render(); };
+  const n = v.querySelector("#next"); if(n) n.onclick = () => { quiz.i++; quiz.ans=null; if(quiz.i>=N){ quiz.done=true; DB.quizBests ||= {}; if(quiz.score>(DB.quizBests[quiz.k]||0)){DB.quizBests[quiz.k]=quiz.score; save();} } render(); };
 }
 
 /* ===================== RECHNER ===================== */
@@ -1839,32 +1868,53 @@ async function shareFile(name, data, mime, binary){
 }
 function exportData(){ shareFile("fox-stanze-sicherung-" + today() + ".json", JSON.stringify(DB), "application/json"); }
 function importData(text){
+  text = String(text||"").trim();
+  const jm = text.match(/FOXJOB1:(\{[\s\S]*\})/);
+  if(jm){ try{ importJob(JSON.parse(jm[1])); }catch(e){ toast("Rüstblatt-Code ist unvollständig – bitte ganz kopieren"); } return; }
   try{
     const d = JSON.parse(text);
+    if(d && d.t === "foxjob"){ importJob(d); return; }
     if(!d || !Array.isArray(d.jobs)) throw 0;
     confirmBox(`Sicherung mit ${d.jobs.length} Artikeln und ${(d.shifts||[]).length} Schichten einspielen? Aktuelle Daten werden ersetzt.`, () => {
       DB = Object.assign({jobs:[],shifts:[],notes:{},quizBest:0,theme:"auto",seeded:true,fehler:null,checklist:null,checkDone:[],timer:null,remind:null}, d);
       seedExtras(); save(); applyTheme(); SUB=null; render(); toast("Sicherung eingespielt ✓"); }, "Ja, einspielen");
   }catch(e){ toast("Das ist keine gültige Fox-Stanze-Sicherung"); }
 }
-document.getElementById("btnMenu").onclick = () => {
-  const m = modal(`<h3>Export &amp; Sicherung</h3>
+document.getElementById("btnMenu").onclick = async () => {
+  await loadVer();
+  const lb = DB.lastBackup ? new Date(DB.lastBackup).toLocaleDateString("de-DE") : "noch nie";
+  const m = modal(`<h3>Einstellungen &amp; Export</h3>
+    <div class="tog"><span>🧤 Handschuh-Modus<br><small class="small">Große Knöpfe und Schrift</small></span><label class="sw"><input type="checkbox" id="opBig" ${DB.big?"checked":""}><span></span></label></div>
+    <h3 style="margin-top:14px">Export</h3>
     <button class="btn" id="pdfS">📄 Schichtbericht als PDF</button>
     <button class="btn light" id="csvS">📊 Schichten als Tabelle (Excel/CSV)</button>
     <button class="btn light" id="csvJ">📊 Rüstblätter als Tabelle (Excel/CSV)</button>
-    <h3 style="margin-top:18px">Daten sichern</h3>
-    <p class="small" style="margin-bottom:6px">Alles bleibt nur auf deinem Handy. Mach ab und zu eine Sicherung, z. B. vor einem Handywechsel.</p>
-    <button class="btn light" id="exp">📤 Sicherung erstellen / teilen</button>
-    <label class="btn light" style="text-align:center">📥 Sicherung einspielen<input type="file" accept=".json,application/json,text/plain" id="imp" hidden></label>
-    <button class="btn light" id="paste">📋 Sicherung aus Zwischenablage</button>
-    <p class="small" style="margin-top:12px;text-align:center">Fox Stanze · Build ${window.APP_BUILD||"dev"} · ${DB.jobs.length} Artikel · ${DB.shifts.length} Schichten</p>
+    <h3 style="margin-top:18px">Sicherung</h3>
+    <div class="tog"><span>Jede Woche automatisch sichern<br><small class="small">In Download/Fox Stanze · zuletzt: ${lb}</small></span><label class="sw"><input type="checkbox" id="opAuto" ${DB.autoBackup!==false?"checked":""}><span></span></label></div>
+    <button class="btn light" id="bkNow">💾 Jetzt in Downloads sichern</button>
+    <button class="btn light" id="exp">📤 Sicherung teilen (z. B. an dich selbst)</button>
+    <h3 style="margin-top:18px">Einspielen</h3>
+    <p class="small" style="margin-bottom:6px">Für eine Sicherung oder ein Rüstblatt von einem Kollegen.</p>
+    <label class="btn light" style="text-align:center">📥 Datei einspielen<input type="file" accept=".json,application/json,text/plain,*/*" id="imp" hidden></label>
+    <button class="btn light" id="paste">📋 Aus Zwischenablage einspielen</button>
+    <h3 style="margin-top:18px">App-Update</h3>
+    <button class="btn light" id="updChk">🔄 Nach Update suchen</button>
+    <div class="tog"><span>Automatisch nach Updates suchen</span><label class="sw"><input type="checkbox" id="opUpd" ${DB.autoUpd!==false?"checked":""}><span></span></label></div>
+    <p class="small" style="margin-top:12px;text-align:center">Fox Stanze · Version ${appVer ? appVer.code : (window.APP_BUILD||"dev")} · ${DB.jobs.length} Artikel · ${DB.shifts.length} Schichten<br>Design by <b style="color:var(--fox)">Mr.Fox</b></p>
     <button class="btn light" data-close>Schließen</button>`);
+  m.querySelector("#opBig").onchange = e => { DB.big = e.target.checked; save(); applyBig(); };
+  m.querySelector("#opAuto").onchange = e => { DB.autoBackup = e.target.checked; save(); };
+  m.querySelector("#opUpd").onchange = e => { DB.autoUpd = e.target.checked; save(); };
   m.querySelector("#pdfS").onclick = () => { m.remove(); pickPeriod(days => pdfShifts(days)); };
   m.querySelector("#csvS").onclick = () => { m.remove(); csvShifts(); };
   m.querySelector("#csvJ").onclick = () => { m.remove(); csvJobs(); };
+  m.querySelector("#bkNow").onclick = () => { m.remove(); backupNow(false); };
   m.querySelector("#exp").onclick = () => { m.remove(); exportData(); };
+  m.querySelector("#updChk").onclick = () => { m.remove(); checkUpdate(true); };
   m.querySelector("#imp").onchange = e => { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ m.remove(); importData(r.result); }; r.readAsText(f); };
-  m.querySelector("#paste").onclick = async () => { try{ const t = await navigator.clipboard.readText(); m.remove(); importData(t); }catch(e){ toast("Zwischenablage nicht lesbar"); } };
+  m.querySelector("#paste").onclick = async () => { let t = ""; try{ t = await navigator.clipboard.readText(); }catch(e){}
+    if(!t && NATIVE){ try{ const r = await capCall("Clipboard","read"); t = r && r.value || ""; }catch(e){} }
+    if(!t){ toast("Zwischenablage leer oder nicht lesbar"); return; } m.remove(); importData(t); };
 };
 function pickPeriod(cb){
   const m = modal(`<h3>Zeitraum</h3>${[[7,"Letzte 7 Tage"],[30,"Letzte 30 Tage"],[0,"Alles"]].map(([d,l])=>`<button class="btn light" data-d="${d}">${l}</button>`).join("")}<button class="btn light" data-close>Abbrechen</button>`);
@@ -1877,7 +1927,7 @@ const csv = rows => "﻿" + rows.map(r => r.map(csvCell).join(";")).join("\r\n")
 function csvShifts(){
   const rows = [["Datum","Schicht","Artikel","Bogen","Ausstoß/h","Geschwindigkeit/h","Störminuten","Störungen","Notiz"]];
   [...DB.shifts].sort((a,b)=>a.datum.localeCompare(b.datum)).forEach(s => rows.push([dDE(s.datum), s.schicht, s.artikel, s.stueck, s.ausstoss, s.speed,
-    (s.stoer||[]).reduce((b,x)=>b+(num(x.min)||0),0), (s.stoer||[]).map(x=>x.t+(x.min?` (${x.min} Min)`:"")).join(", "), s.notiz]));
+    (s.stoer||[]).reduce((b,x)=>b+(num(x.min)||0),0), (s.stoer||[]).map(x=>x.t+(x.min?` (${x.min} Min)`:"")+(x.nr?` Nr. ${x.nr}`:"")+(x.sp?` [${x.sp}]`:"")).join(", "), s.notiz]));
   shareFile("fox-stanze-schichten-"+today()+".csv", csv(rows), "text/csv");
 }
 function csvJobs(){
@@ -1972,7 +2022,7 @@ function pdfShifts(days){
   ["Datum","Schicht","Artikel","Bogen","Ausstoß","Störungen / Notiz"].forEach((h,i)=>P.doc.text(h, cols[i], P.y)); P.y += 5.5;
   P.doc.setTextColor(22,33,63);
   list.forEach(s => {
-    const info = pdfTxt([(s.stoer||[]).filter(x=>x.t).map(x=>x.t+(x.min?` ${x.min}'`:"")).join(", "), s.notiz].filter(Boolean).join(" - "));
+    const info = pdfTxt([(s.stoer||[]).filter(x=>x.t).map(x=>x.t+(x.min?` ${x.min}'`:"")+(x.nr?` Nr.${x.nr}`:"")+(x.sp?` [${x.sp}]`:"")).join(", "), s.notiz].filter(Boolean).join(" - "));
     const lines = P.doc.splitTextToSize(info || "-", 78);
     pdfNeed(P, 5 + lines.length*4.4);
     P.doc.setFont("helvetica","normal");
@@ -2011,6 +2061,350 @@ document.getElementById("btnTheme").onclick = () => {
   DB.theme = dark ? "light" : "dark"; save(); applyTheme();
 };
 
+/* ===================== App-Update über GitHub ===================== */
+const REPO = "Djlover007/Fox-Stanze";
+let appVer = null, upd = null, updListen = false;
+async function loadVer(){
+  if(appVer || !NATIVE) return;
+  try{ const i = await capCall("Updater","info"); appVer = {code:Number(i.versionCode), name:String(i.versionName||"")}; }catch(e){}
+}
+const errTxt = e => String((e && (e.message || e.errorMessage)) || e || "Fehler");
+async function checkUpdate(manual){
+  if(!NATIVE){ if(manual) toast("Updates gehen nur in der installierten App"); return; }
+  await loadVer();
+  if(manual) toast("Suche nach Updates …");
+  try{
+    const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 12000);
+    const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {headers:{Accept:"application/vnd.github+json"}, signal:ac.signal});
+    clearTimeout(tm);
+    if(!r.ok) throw new Error("GitHub " + r.status);
+    const j = await r.json(), m = String(j.tag_name||"").match(/(\d+)\s*$/), ver = m ? parseInt(m[1],10) : 0;
+    const asset = (j.assets||[]).find(a => /\.apk$/i.test(a.name));
+    if(!asset) throw new Error("keine APK im Release");
+    DB.updChecked = Date.now(); save();
+    if(appVer && ver > appVer.code){
+      upd = {ver, url:asset.browser_download_url, size:asset.size, done:false,
+        notes:String(j.body||"").split(/\r?\n/).map(l => l.replace(/^[\s*•-]+/,"").trim()).filter(l => l && !/^(co-authored-by|claude-session)/i.test(l) && !/^https?:/.test(l))};
+      updateSheet();
+    } else if(manual) toast(`Du hast die neueste Version (${appVer ? appVer.code : "?"}).`, 3500);
+  }catch(e){ if(manual) toast("Update-Prüfung fehlgeschlagen: " + errTxt(e).slice(0,90), 4000); }
+}
+function updateSheet(){
+  const m = modal(`<h3>🦊 Neues Update bereit</h3>
+    <div class="card" style="background:var(--bg)"><b>Version ${upd.ver}</b><div class="small">Installiert: ${appVer ? appVer.code : "?"}${upd.size ? " · " + fmt(upd.size/1048576,1) + " MB" : ""}</div>
+    ${upd.notes.length ? `<ul style="margin:8px 0 0 18px;font-size:14px;line-height:1.45">${upd.notes.slice(0,10).map(l => `<li>${esc(l)}</li>`).join("")}</ul>` : ""}</div>
+    <p class="small">Deine Daten bleiben beim Update erhalten.</p>
+    <button class="btn fox" id="updGo">Jetzt aktualisieren</button><button class="btn light" data-close>Später</button>`);
+  m.querySelector("#updGo").onclick = () => { m.remove(); doUpdate(); };
+}
+async function doUpdate(){
+  if(!upd) return;
+  if(!updListen && CAP.nativeCallback){
+    updListen = true;
+    try{ CAP.nativeCallback("Updater","addListener",{eventName:"progress"}, e => {
+      const p = (e && e.percent) || 0, a = document.getElementById("updP"), b = document.getElementById("updB");
+      if(a) a.textContent = "Lade … " + p + " %"; if(b) b.style.width = p + "%"; }); }catch(x){}
+    try{ CAP.nativeCallback("Updater","addListener",{eventName:"installResult"}, e => {
+      const st = e && e.status, ms = String((e && e.message) || "");
+      if(st === 0) return; if(st === 3){ toast("Installation abgebrochen."); return; }
+      const t = (st===7 || st===5 || /INCOMPATIBLE|signature|CONFLICT/i.test(ms)) ? "Die Signatur passt nicht zur installierten App. Mach eine Sicherung, deinstalliere Fox Stanze einmal und installiere die neueste Version von GitHub."
+        : st === 6 ? "Auf dem Handy ist zu wenig Speicher frei." : "Android hat die Installation abgelehnt.";
+      modal(`<h3>Installation fehlgeschlagen</h3><p style="font-size:15px;line-height:1.45">${esc(t)}</p><p class="small">Technisch: ${esc(ms.slice(0,160) || "Code " + st)}</p><button class="btn light" data-close>OK</button>`); }); }catch(x){}
+  }
+  let w = null;
+  try{
+    if(!upd.done){
+      w = modal(`<h3>Update wird geladen</h3><b id="updP">Lade … 0 %</b><div class="prog"><i id="updB" style="width:0"></i></div>`);
+      await capCall("Updater","download",{url:upd.url}); upd.done = true; w.remove(); w = null;
+    }
+    await capCall("Updater","install");
+  }catch(e){
+    if(w) w.remove();
+    const ms = errTxt(e);
+    if(/permission/i.test(ms)) toast("Erlaube Fox Stanze „Apps installieren“ und tippe danach nochmal auf Update.", 6000);
+    else toast("Update fehlgeschlagen: " + ms.slice(0,160), 6000);
+  }
+}
+
+/* ===================== Automatische Sicherung ===================== */
+async function backupNow(auto){
+  if(!NATIVE){ if(!auto) exportData(); return; }
+  const name = (auto ? "fox-stanze-auto-" : "fox-stanze-sicherung-") + today() + ".json";
+  try{
+    DB.lastBackup = Date.now(); save();
+    const r = await capCall("FoxStanze","saveBackup",{name, data:JSON.stringify(DB), keep:4, prune:auto ? "fox-stanze-auto-" : ""});
+    toast((auto ? "Wochen-Sicherung gespeichert: " : "Gesichert in ") + (r && r.path || "Download"), auto ? 3000 : 4500);
+  }catch(e){ DB.lastBackup = 0; save(); if(!auto) toast("Sicherung fehlgeschlagen: " + errTxt(e).slice(0,120), 5000); }
+}
+function autoTasks(){
+  if(!NATIVE) return;
+  if(DB.autoBackup !== false && (DB.jobs.length || DB.shifts.length) && Date.now() - (DB.lastBackup||0) > 7*864e5) setTimeout(() => backupNow(true), 4000);
+  if(DB.autoUpd !== false && Date.now() - (DB.updChecked||0) > 6*3600e3) setTimeout(() => checkUpdate(false), 2500);
+}
+
+/* ===================== Handschuh-Modus ===================== */
+function applyBig(){
+  document.documentElement.classList.toggle("big", !!DB.big);
+  const b = document.getElementById("btnBig"); if(b) b.classList.toggle("on", !!DB.big);
+}
+document.getElementById("btnBig").onclick = () => { DB.big = !DB.big; save(); applyBig(); toast(DB.big ? "🧤 Handschuh-Modus an: große Knöpfe" : "Handschuh-Modus aus"); };
+
+/* ===================== Rüstblatt teilen / empfangen ===================== */
+try{ if(window.qrcode && qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs["UTF-8"]) qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"]; }catch(e){}
+const JOB_KEYS = ["artikel","kunde","format","dicke","speed","leerhuebe","buendel","einschub","bremsbuerste","notiz","values","extra"];
+function jobPack(j, photos){
+  const o = {t:"foxjob", v:1}; JOB_KEYS.forEach(k => { if(j[k] !== undefined && j[k] !== "") o[k] = j[k]; });
+  if(o.extra && !Object.keys(o.extra).some(k => (o.extra[k]||[]).length)) delete o.extra;
+  if(photos && (j.photos||[]).length) o.photos = j.photos;
+  return o;
+}
+function shareJob(j){
+  const code = "FOXJOB1:" + JSON.stringify(jobPack(j, false));
+  const qrOk = code.length <= 2200;
+  const m = modal(`<h3>📤 Rüstblatt ${esc(j.artikel)} weitergeben</h3>
+    <p class="small" style="margin-bottom:6px">Der Kollege braucht auch Fox Stanze. Er tippt auf ⋯ › „Datei einspielen“ oder „Aus Zwischenablage“ – oder scannt den QR-Code mit ▦ QR.</p>
+    <button class="btn" id="shF">📎 Als Datei senden${(j.photos||[]).length ? " (mit Fotos)" : ""}</button>
+    <button class="btn light" id="shQ" ${qrOk ? "" : "disabled style=\"opacity:.5\""}>▦ Als QR-Code zeigen${qrOk ? "" : " (zu viele Daten)"}</button>
+    <button class="btn light" id="shT">📋 Als Text kopieren (WhatsApp)</button>
+    <p class="small" style="margin-top:8px">Es werden nur die Rüstwerte weitergegeben – keine Schichtdaten.</p>
+    <button class="btn light" data-close>Schließen</button>`);
+  m.querySelector("#shF").onclick = () => { m.remove(); shareFile(`Ruestblatt-${j.artikel}.foxstanze.json`, JSON.stringify(jobPack(j, true)), "application/json"); };
+  m.querySelector("#shT").onclick = () => { m.remove(); copy(code); };
+  if(qrOk) m.querySelector("#shQ").onclick = () => {
+    m.remove();
+    const q = qrcode(0, "L"); q.addData(code, "Byte"); q.make();
+    modal(`<h3>Rüstblatt ${esc(j.artikel)}</h3><div class="qrbox">${q.createSvgTag({cellSize:4, margin:2, scalable:true}).replace("<svg", "<svg style=\"width:100%;height:auto;max-width:320px\"")}</div>
+      <p class="small" style="margin:10px 2px">Kollege: in der Artikelliste auf „▦ QR“ tippen und diesen Code fotografieren. Bildschirm hell stellen.</p><button class="btn light" data-close>Schließen</button>`);
+  };
+}
+function importJob(o){
+  if(!o || o.t !== "foxjob" || !o.artikel){ toast("Das ist kein gültiges Rüstblatt"); return; }
+  const take = (j) => { JOB_KEYS.forEach(k => { if(o[k] !== undefined) j[k] = JSON.parse(JSON.stringify(o[k])); });
+    j.values ||= {}; j.extra ||= {}; if(o.photos) j.photos = (j.photos||[]).concat(o.photos);
+    j.history ||= []; j.history.push(snapshot(j)); j.updated = Date.now(); };
+  const ex = DB.jobs.find(j => j.artikel === o.artikel);
+  const neu = (art) => { const j = {id:uid(), photos:[], history:[], ruestzeiten:[], created:Date.now(), used:Date.now()}; take(j); if(art) j.artikel = art; j.history = [snapshot(j)]; DB.jobs.push(j); save(); openJob(j.id); toast("Rüstblatt übernommen ✓"); };
+  if(!ex) return neu();
+  const m = modal(`<h3>Artikel ${esc(o.artikel)} gibt es schon</h3><p class="small" style="margin-bottom:6px">Was soll passieren?</p>
+    <button class="btn" id="imOv">Werte übernehmen</button><p class="small">Deine alten Werte bleiben im Verlauf und lassen sich wiederherstellen.</p>
+    <button class="btn light" id="imCp">Als Kopie anlegen (${esc(o.artikel)}-K)</button><button class="btn light" data-close>Abbrechen</button>`);
+  m.querySelector("#imOv").onclick = () => { m.remove(); if(!ex.history || !ex.history.length) ex.history = [snapshot(ex)]; take(ex); save(); openJob(ex.id); toast("Werte übernommen ✓ – alte Werte im Verlauf"); };
+  m.querySelector("#imCp").onclick = () => { m.remove(); neu(o.artikel + "-K"); };
+}
+
+/* ===================== Laufkarte abfotografieren ===================== */
+const FLUTE = {F:1.0, E:1.5, B:3.0, C:4.0, A:5.0, EE:3.0, EB:4.5, BE:4.5, BB:6.0, BC:7.0, CB:7.0, EC:5.5};
+function lkParse(res){
+  const lines = (res.lines||[]).map(l => Object.assign({}, l, {els:(l.elements && l.elements.length) ? l.elements : [{text:l.text, x:l.x, y:l.y, w:l.w, h:l.h}]}));
+  const allText = lines.map(l => l.text).join("\n");
+  const lineOf = el => lines.find(l => l.els.includes(el));
+  /* Anker suchen: Element, dessen Zeile zur Beschriftung passt */
+  const anchor = (elRe, lineRe) => { for(const l of lines){ if(lineRe && !lineRe.test(l.text)) continue; const e = l.els.find(x => elRe.test(x.text)); if(e) return {e, l}; } return null; };
+  /* Wert unter der Beschriftung (gleiche Tabellenspalte) */
+  const below = (a) => {
+    if(!a) return "";
+    const h = a.l.h || a.e.h || 20, x0 = a.e.x, y0 = a.l.y;
+    let right = Infinity;
+    for(const l of lines){ if(l === a.l || Math.abs(l.y - y0) > h*0.7) continue; if(l.x > x0 + h) right = Math.min(right, l.x); }
+    const i = a.l.els.indexOf(a.e);
+    for(let k = i+1; k < a.l.els.length; k++){ const p = a.l.els[k-1], e = a.l.els[k]; if(/[:)]$/.test(p.text) && e.x - (p.x+p.w) > h*0.6){ right = Math.min(right, e.x); break; } }
+    const band = [];
+    for(const l of lines){ if(l.y <= y0 + h*0.55 || l.y > y0 + h*3.4) continue;
+      for(const e of l.els){ const cx = e.x + e.w/2; if(cx >= x0 - h*0.8 && cx < right - h*0.2) band.push(e); } }
+    if(!band.length) return "";
+    const top = Math.min(...band.map(e => e.y));
+    return band.filter(e => e.y < top + h*0.8).sort((p,q) => p.x - q.x).map(e => e.text).join(" ").trim();
+  };
+  const nums = t => (String(t).replace(/(\d)\.(\d{3})(?!\d)/g, "$1$2").match(/\d+(?:[.,]\d+)?/g) || []).map(Number);
+  const dims = t => { const m = String(t).replace(/\s+/g," ").match(/(\d{2,4})\s*[xX×*]\s*(\d{2,4})(?:\s*[xX×*]\s*(\d{2,4}))?/); return m ? m.slice(1).filter(Boolean).map(Number) : null; };
+  const out = {}, src = {};
+  const set = (k, v, how) => { if(v !== undefined && v !== null && v !== "" && !(typeof v === "number" && isNaN(v))){ out[k] = String(v); src[k] = how || "erkannt"; } };
+  // Kunde (rechts daneben)
+  const ku = anchor(/^kunde:?$/i);
+  if(ku){ const i = ku.l.els.indexOf(ku.e); const rest = []; for(const e of ku.l.els.slice(i+1)){ if(/:$/.test(e.text) || /^(sb|datum)/i.test(e.text)) break; rest.push(e.text); }
+    let t = rest.join(" ").trim(); if(!t){ const n = lines.filter(l => Math.abs(l.y - ku.l.y) < ku.l.h*0.7 && l.x > ku.e.x).sort((a,b)=>a.x-b.x)[0]; if(n && !/:/.test(n.text)) t = n.text; }
+    set("kunde", t); }
+  const art = below(anchor(/^artikel/i, /artikel\s*-?\s*n[rt]/i)); { const m = art.match(/\d{3,}/); if(m) set("artikel", m[0]); }
+  const fm = nums(below(anchor(/^fertig/i, /menge/i))); if(fm.length >= 2){ set("menge", fm[0]); set("stueck", fm[1]); } else if(fm.length === 1) set("stueck", fm[0]);
+  const zz = dims(below(anchor(/^format/i, /z\s*[bl]/i))); if(zz){ set("zb", zz[0]); set("zl", zz[1]); }
+  const wp = dims(below(anchor(/^wpa/i))); if(wp){ set("welle", wp[0]); set("bogen", wp[1]); }
+  const nu = nums(below(anchor(/^nutzen/i)))[0];
+  const bu = nums(below(anchor(/^b[üu]ndel:?$/i)))[0]; if(bu) set("bpb", bu);
+  const ss = nums(below(anchor(/^stk\W*stpl/i)))[0]; if(ss) set("stkStpl", ss);
+  const sp = nums(below(anchor(/^stpl\W*pal/i)))[0]; if(sp) set("stplPal", sp);
+  const pd = dims(below(anchor(/^pal\.?$/i, /l[äa]nge/i)) || "") || dims((allText.match(/1[0-2]\d0\s*[xX×]\s*[6-9]\d0\s*[xX×]\s*\d{3,4}/)||[""])[0]);
+  if(pd){ set("palL", pd[0]); set("palB", pd[1]); if(pd[2]) set("palH", pd[2]); }
+  const pb = below(anchor(/^palettierbild/i)); if(pb) set("pbild", pb);
+  if(/gedreht/i.test(pb || allText)) set("dreh", "ja");
+  if(/mit\s*zwischenlage/i.test(allText)) set("zw", "alle"); else if(/ohne\s*zwischenlage/i.test(allText)) set("zw", "keine");
+  if(/abdeckbogen/i.test(allText)) set("abdeck", "ja");
+  // Nutzen längs × quer aus Bogen und Zuschnitt
+  if(nu){
+    const W = num(out.welle), B = num(out.bogen), a = num(out.zb), b = num(out.zl); let l = nu, q = 1;
+    if(W && B && a && b){ for(const [p, r] of [[Math.floor(W/a), Math.floor(B/b)], [Math.floor(W/b), Math.floor(B/a)]]) if(p*r === nu){ l = p; q = r; break; } }
+    set("nl", l); set("nq", q); src.nl = src.nq = l*q === nu && q !== 1 ? "aus Nutzen " + nu + " berechnet" : "Nutzen gesamt " + nu;
+  }
+  // Bogendicke aus der Sorte schätzen
+  const so = below(anchor(/^sorte/i)); const fl = (so.match(/^([A-F]{1,2})[_\s-]/i) || [])[1];
+  if(fl && FLUTE[fl.toUpperCase()]){ set("dicke", String(FLUTE[fl.toUpperCase()]).replace(".", ",")); src.dicke = `geschätzt aus Sorte ${so.split(/\s/)[0]} – bitte messen`; }
+  return {out, src, text:allText};
+}
+const LK_FIELDS = [["artikel","Artikel"],["kunde","Kunde"],["welle","Wellenmaß (mm)"],["bogen","Bogenmaß (mm)"],["zb","Zuschnitt ZB"],["zl","Zuschnitt ZL"],["nl","Nutzen längs"],["nq","Nutzen quer"],
+  ["menge","Bogen (Menge)"],["stueck","Fertigmenge Stück"],["dicke","Bogendicke (mm)"],["bpb","Bogen pro Bündel"],["stkStpl","Stk/Stpl"],["stplPal","Stpl/Pal"],["palL","Palette Länge"],["palB","Palette Breite"],["palH","Max. Höhe"]];
+async function lkScan(file){
+  if(!NATIVE){ toast("Texterkennung geht nur in der installierten App"); return; }
+  const w = modal(`<h3><span class="spin" style="border-color:rgba(0,0,0,.15);border-top-color:var(--accent)"></span> Laufkarte wird gelesen …</h3><p class="small">Halte die Laufkarte gerade und gut beleuchtet.</p>`);
+  let img, res;
+  try{ img = await shrink(file, 2600, .9); res = await capCall("FoxStanze","ocr",{image:img.split(",")[1]}); }
+  catch(e){ w.remove(); toast("Texterkennung fehlgeschlagen: " + errTxt(e)); return; }
+  w.remove();
+  const P = lkParse(res);
+  const n = Object.keys(P.out).length;
+  const m = modal(`<h3>📄 Laufkarte – ${n} Werte erkannt</h3>
+    <p class="small" style="margin-bottom:8px">Bitte kurz mit der Laufkarte vergleichen und korrigieren. Leere Felder wurden nicht gefunden.</p>
+    <img src="${img}" id="lkImg" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-bottom:8px">
+    <div class="grid">${LK_FIELDS.map(([k,l]) => `<label class="f"><span>${l}</span><input data-lk="${k}" value="${esc(P.out[k] || GJ[k] || "")}" style="${P.out[k]?"border-color:var(--ok)":""}">${P.src[k] && P.src[k] !== "erkannt" ? `<span class="small" style="display:block;margin-top:2px;color:var(--fox)">${esc(P.src[k])}</span>` : ""}</label>`).join("")}</div>
+    <div class="tog"><span>Mit Zwischenlagen</span><label class="sw"><input type="checkbox" id="lkZw" ${(P.out.zw||GJ.zw)==="alle"?"checked":""}><span></span></label></div>
+    <div class="tog"><span>Abdeckbogen</span><label class="sw"><input type="checkbox" id="lkAb" ${P.out.abdeck||GJ.abdeck?"checked":""}><span></span></label></div>
+    <div class="tog"><span>Palettierbild gedreht${P.out.pbild ? ` („${esc(P.out.pbild)}“)` : ""}</span><label class="sw"><input type="checkbox" id="lkDr" ${P.out.dreh||GJ.dreh?"checked":""}><span></span></label></div>
+    <button class="btn" id="lkOk">✓ Übernehmen</button>
+    <details style="margin-top:8px"><summary class="small">Erkannter Text anzeigen</summary><pre style="white-space:pre-wrap;font-size:11px;max-height:200px;overflow:auto">${esc(P.text)}</pre></details>
+    <button class="btn light" data-close>Abbrechen</button>`);
+  m.querySelector("#lkImg").onclick = () => zoomImg(img);
+  m.querySelector("#lkOk").onclick = () => {
+    m.querySelectorAll("[data-lk]").forEach(i => { if(i.value.trim()) GJ[i.dataset.lk] = i.value.trim(); });
+    GJ.zw = m.querySelector("#lkZw").checked ? "alle" : "keine"; GJ.abdeck = m.querySelector("#lkAb").checked; GJ.dreh = m.querySelector("#lkDr").checked;
+    if(num(GJ.welle) && num(GJ.bogen)) GJ.format = `${GJ.welle} x ${GJ.bogen}`;
+    const nuT = (num(GJ.nl)||0)*(num(GJ.nq)||0); if(num(GJ.stueck) && nuT && !P.out.menge) GJ.menge = String(Math.ceil(num(GJ.stueck)/nuT));
+    GJ._lk = true; gRun = null; gPal = null; m.remove(); render(); toast("Laufkarte übernommen ✓");
+  };
+}
+
+/* ===================== Gesamtablauf: Stanze → Palette ===================== */
+const FLOW = [["📥","Anleger","s"],["🔨","Stanze","s"],["🪓","Ausbrechen","s"],["📦","Bogenableger","s"],["⚡","BS1 Brecher 1","c"],["↪","AC1 Winkel","c"],["⚡","BS2 Brecher 2","c"],["↪","AC2 Winkel","c"],
+  ["🔄","TT1 Drehtisch","c"],["➡","CV1 Band","c"],["↪","AC3 Winkel","c"],["▦","APC1 Lagenbildung","c"],["🔃","LI1 Lagenwender","c"],["🧱","PAL1 Palettierer","c"],["🚚","CV2 Austransport","c"]];
+let gAllS = null, gAllRaf = null;
+function gAllStop(){ if(gAllRaf){ cancelAnimationFrame(gAllRaf); gAllRaf = null; } }
+function gAllModel(){
+  const sp = num(GJ.speed), menge = num(GJ.menge), bpb = num(GJ.bpb), nutzen = (num(GJ.nl)||1)*(num(GJ.nq)||1);
+  const stplPal = num(GJ.stplPal), stkStpl = num(GJ.stkStpl);
+  const miss = [];
+  if(!sp) miss.push("Geschwindigkeit"); if(!menge) miss.push("Menge (Bogen)"); if(!bpb) miss.push("Bogen pro Bündel"); if(!stplPal) miss.push("Stpl/Pal"); if(!stkStpl) miss.push("Stk/Stpl");
+  if(miss.length) return {miss};
+  const lagen = Math.max(1, Math.ceil(stkStpl/bpb));
+  const perLayer = stplPal*bpb, perPal = stkStpl*stplPal, total = menge*nutzen;
+  const T = 45, TL = 15, TOUT = 12;              // Sekunden: Weg durch den Corrpal, Lage auf Palette, Austransport
+  const tSheet = 3600/sp;
+  const sheetsAt = t => Math.max(0, Math.min(menge, Math.floor(t/tSheet)));
+  const tEnd = menge*tSheet;
+  const bundlesDone = t => { const s = sheetsAt(t); return s >= menge ? Math.ceil(menge/bpb) : Math.floor(s/bpb); };
+  const piecesAt = t => { const s = sheetsAt(t - T); const full = s >= menge ? menge : Math.floor(s/bpb)*bpb; return full*nutzen; };
+  const layersAt = t => { const p = piecesAt(t - TL); return p >= total ? Math.ceil(total/perLayer) : Math.floor(p/perLayer); };
+  const palPieces = t => Math.min(total, layersAt(t)*perLayer);
+  const palsAt = t => { const p = palPieces(t); return p >= total ? Math.ceil(total/perPal) : Math.floor(p/perPal); };
+  const tFinish = tEnd + T + TL + TOUT;
+  const tFirst = Math.ceil(perPal/nutzen/bpb)*bpb*tSheet + T + TL;
+  return {sp, menge, bpb, nutzen, stplPal, stkStpl, lagen, perLayer, perPal, total, T, TL, TOUT, tSheet, tEnd, tFinish, tFirst,
+    interval:perPal/nutzen*tSheet, pals:Math.ceil(total/perPal), lastPal:total % perPal, sheetsAt, bundlesDone, piecesAt, layersAt, palsAt};
+}
+const hm = s => { s = Math.round(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60); return h ? `${h} h ${m} min` : m ? `${m} min ${s%60 ? (s%60)+" s" : ""}`.trim() : `${s} s`; };
+function gAll(body){
+  const M = gAllModel();
+  if(M.miss){ body.innerHTML = `<div class="card"><b>Für den Gesamtablauf fehlt noch:</b><div class="small" style="margin-top:6px">${M.miss.join(", ")}</div><div class="small" style="margin-top:6px">Am schnellsten: „📷 Laufkarte fotografieren“ oben, dann Bündelstückzahl ergänzen.</div></div>`; return; }
+  gAllS ||= {t:0, speed:60, run:false};
+  const ROW = 40;
+  body.innerHTML = `<div class="card">
+      <div class="stats" style="margin-top:0">${[["gaT","Maschinenzeit"],["gaB","Bogen"],["gaL","Lagen"],["gaP","Paletten"]].map(([i,l]) => `<div style="background:var(--chip);color:var(--text)"><b id="${i}">0</b><span>${l}</span></div>`).join("")}</div>
+      <div class="prog"><i id="gaProg"></i></div>
+    </div>
+    <div class="card" id="gaBox" style="padding:10px">
+      <div style="position:relative;height:${FLOW.length*ROW}px">
+        <div style="position:absolute;left:21px;top:${ROW/2}px;bottom:${ROW/2}px;width:4px;background:var(--chip);border-radius:2px"></div>
+        <div style="position:absolute;left:0;right:0;top:${4*ROW-4}px;border-top:2px dashed var(--muted);opacity:.5"></div>
+        ${FLOW.map((f,i) => `<div id="gaR${i}" style="position:absolute;left:0;right:0;top:${i*ROW}px;height:${ROW-4}px;display:flex;align-items:center;gap:10px;border-radius:10px;transition:background .25s">
+          <span style="width:46px;text-align:center;font-size:17px;z-index:1">${f[0]}</span><b style="flex:1;font-size:14px">${f[1]}</b><span class="small" id="gaV${i}" style="text-align:right;padding-right:6px"></span></div>`).join("")}
+        <div id="gaTok" style="position:absolute;left:30px;top:0;width:0;height:100%;pointer-events:none"></div>
+      </div>
+      <div class="small" style="margin-top:4px"><span style="color:var(--accent)">■</span> Stanze G-Cut · <span style="color:var(--fox)">■</span> Palettierer Corrpal · <span style="color:#c98a2b">▬</span> Bündel · <span style="color:#f2a54a">▬</span> Lage</div>
+      <div id="gaTxt" style="font-size:14px;line-height:1.4;margin:8px 2px;min-height:38px"></div>
+      <div class="chips" style="margin-bottom:6px">${[[10,"×10"],[60,"×60"],[300,"×300"],[1200,"×1200"]].map(([f,l]) => `<button class="chip ${gAllS.speed===f?"on":""}" data-gf="${f}">${l}</button>`).join("")}</div>
+      <div class="row" style="gap:6px"><button class="btn sm" id="gaPlay">${gAllS.run ? "⏸ Pause" : "▶ Start"}</button><button class="btn light sm" id="gaEnd" style="flex:none;width:56px">⏭</button><button class="btn light sm" id="gaReset" style="flex:none;width:56px">↺</button></div>
+    </div>
+    <div class="card"><b>Zeitplan</b>
+      <div style="font-size:14px;line-height:1.6;margin-top:6px">
+        Stanzen: <b>${hm(M.tEnd)}</b> für ${fmt(M.menge)} Bogen<br>
+        Erste Palette fertig nach ca. <b>${hm(Math.min(M.tFirst, M.tFinish))}</b><br>
+        Danach alle <b>${hm(M.interval)}</b> eine Palette<br>
+        ${fmt(M.pals)} Paletten à ${fmt(M.perPal)} Stück${M.lastPal ? `, letzte mit ${fmt(M.lastPal)} Stück` : ""}<br>
+        ${fmt(M.lagen)} Lagen pro Palette · ${fmt(M.nutzen)} Nutzen pro Bogen · 1 Bündel = ${fmt(M.bpb*M.nutzen/M.perLayer, 1)} Lagen
+      </div>
+      <div class="small" style="margin-top:6px">Ohne Störungen und Rüstzeiten. Die Wege im Corrpal sind geschätzt (ca. ${M.T} s).</div></div>`;
+  const $ = id => document.getElementById(id);
+  const rowY = i => i*ROW + ROW/2 - 8;
+  const draw = () => {
+    if(!$("gaBox")){ gAllStop(); return; }
+    const t = gAllS.t, s = M.sheetsAt(t), bd = M.bundlesDone(t), L = M.layersAt(t), P = M.palsAt(t);
+    $("gaT").textContent = hm(t); $("gaB").textContent = fmt(s); $("gaL").textContent = fmt(L); $("gaP").textContent = `${fmt(P)}/${fmt(M.pals)}`;
+    $("gaProg").style.width = Math.min(100, t/M.tFinish*100) + "%";
+    // Bündel unterwegs im Corrpal
+    let tok = "", active = new Set();
+    const running = s < M.menge || t < M.tEnd + 1;
+    if(running && t > 0){ active.add(0); active.add(1); active.add(2); }
+    const nb = Math.ceil(M.menge/M.bpb);
+    for(let k = Math.max(1, bd - 30); k <= bd; k++){
+      const tk = Math.min(k*M.bpb, M.menge)*M.tSheet, age = t - tk;
+      if(age < 0 || age > M.T) continue;
+      const pos = 3 + age/M.T*8, i = Math.round(pos); active.add(i);
+      tok += `<div style="position:absolute;left:-8px;top:${rowY(3) + (pos-3)*ROW}px;width:18px;height:14px;background:#d9b077;border:1px solid #9c7a3f;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>`;
+    }
+    // Lagen auf dem Weg zum Palettierer
+    const pAPC = M.piecesAt(t);
+    for(let l = Math.max(1, L - 3); l <= Math.ceil(pAPC/M.perLayer); l++){
+      const pieces = l*M.perLayer; let tl = null;
+      // Zeitpunkt, an dem die Lage in APC1 voll war (grob über Bündel)
+      const kNeed = Math.ceil(Math.min(pieces, M.total)/M.nutzen/M.bpb); tl = Math.min(kNeed*M.bpb, M.menge)*M.tSheet + M.T;
+      const age = t - tl; if(age < 0 || age > M.TL) continue;
+      const pos = 11 + age/M.TL*2; active.add(Math.round(pos));
+      tok += `<div style="position:absolute;left:-11px;top:${rowY(11) + (pos-11)*ROW}px;width:24px;height:10px;background:#f2a54a;border-radius:2px"></div>`;
+    }
+    // Paletten im Austransport
+    for(let p = 1; p <= P; p++){
+      const pieces = Math.min(p*M.perPal, M.total), layersNeed = Math.ceil(pieces/M.perLayer);
+      const tp = Math.min(Math.ceil(Math.min(layersNeed*M.perLayer, M.total)/M.nutzen/M.bpb)*M.bpb, M.menge)*M.tSheet + M.T + M.TL;
+      const age = t - tp; if(age < 0 || age > M.TOUT) continue; active.add(14);
+      tok += `<div style="position:absolute;left:-13px;top:${rowY(14)-4}px;width:28px;height:20px;background:#a0703c;border-radius:3px;opacity:${1-age/M.TOUT}"></div>`;
+    }
+    $("gaTok").innerHTML = tok;
+    const inBund = s >= M.menge ? 0 : s % M.bpb;
+    const inApc = pAPC >= M.total ? 0 : pAPC % M.perLayer, onPal = Math.min(M.total, L*M.perLayer) - P*M.perPal;
+    const vals = {0:`${fmt(Math.max(0, M.menge - s))} Bogen im Stapel`, 1:`${fmt(s)} gestanzt`, 3:`Bündel ${fmt(bd)}/${fmt(nb)} · ${fmt(inBund)}/${fmt(M.bpb)}`,
+      11:`${fmt(Math.floor(Math.max(0,inApc)/M.bpb))}/${fmt(M.stplPal)} Stapel`, 13:`Lage ${fmt(Math.ceil(Math.max(0,onPal)/M.perLayer))}/${fmt(M.lagen)}`, 14:`${fmt(P)} ${P===1?"Palette":"Paletten"} fertig`};
+    FLOW.forEach((f,i) => { const r = $("gaR"+i); r.style.background = active.has(i) ? (f[2]==="s" ? "rgba(43,111,222,.16)" : "rgba(242,140,40,.18)") : ""; $("gaV"+i).textContent = vals[i] || ""; });
+    let msg;
+    if(t >= M.tFinish) msg = `✅ Auftrag fertig: ${fmt(M.pals)} Paletten nach ${hm(M.tFinish)}.`;
+    else if(s < M.menge) msg = `Die Stanze läuft mit ${fmt(M.sp)} Bogen/h. Alle ${hm(M.bpb*M.tSheet)} geht ein Bündel mit ${fmt(M.bpb)} Bogen in den Corrpal, wird in ${fmt(M.nutzen)} Nutzen-Stapel gebrochen und zu Lagen à ${fmt(M.stplPal)} Stapeln geschoben.`;
+    else msg = "Die Stanze ist fertig – der Corrpal arbeitet die letzten Bündel ab.";
+    $("gaTxt").textContent = msg;
+    $("gaPlay").textContent = gAllS.run ? "⏸ Pause" : "▶ Start";
+  };
+  let last = 0;
+  const step = ts => {
+    if(!$("gaBox")){ gAllStop(); return; }
+    const dt = last ? Math.min(0.1, (ts - last)/1000) : 0; last = ts;
+    gAllS.t = Math.min(M.tFinish, gAllS.t + dt*gAllS.speed);
+    draw();
+    if(gAllS.t >= M.tFinish){ gAllS.run = false; draw(); toast("Gesamtablauf fertig ✓"); return; }
+    gAllRaf = requestAnimationFrame(step);
+  };
+  const start = () => { if(gAllS.t >= M.tFinish) gAllS.t = 0; gAllS.run = true; last = 0; gAllStop(); gAllRaf = requestAnimationFrame(step); draw(); };
+  $("gaPlay").onclick = () => { if(gAllS.run){ gAllS.run = false; gAllStop(); draw(); } else start(); };
+  $("gaEnd").onclick = () => { gAllS.run = false; gAllStop(); gAllS.t = M.tFinish; draw(); };
+  $("gaReset").onclick = () => { gAllS.run = false; gAllStop(); gAllS.t = 0; draw(); };
+  body.querySelectorAll("[data-gf]").forEach(b => b.onclick = () => { gAllS.speed = +b.dataset.gf; body.querySelectorAll("[data-gf]").forEach(x => x.classList.toggle("on", x===b)); });
+  draw();
+  if(gAllS.run) start();
+}
+
 /* Android-Zurück-Taste */
 function onBack(){
   const m = document.querySelector(".modal"); if(m){ m.remove(); return; }
@@ -2021,4 +2415,4 @@ function onBack(){
 }
 if(NATIVE && CAP.nativeCallback){ try{ CAP.nativeCallback("App","addListener",{eventName:"backButton"}, () => onBack()); }catch(e){} }
 
-seed(); seedExtras(); save(); applyTheme(); render();
+seed(); seedExtras(); save(); applyTheme(); applyBig(); render(); autoTasks();

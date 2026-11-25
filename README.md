@@ -14,5 +14,15 @@ Handy-App für die Göpfert-Flachbettstanze (Wellpappe) bei Seyfert.
 
 Alle Daten bleiben auf dem Handy. Über ⋯ gibt es Export und Sicherung.
 
+## Neu
+- 🔄 **App-Update** in der App (⋯ › Nach Update suchen, auch automatisch)
+- 💾 **Wochen-Sicherung** automatisch in Download/Fox Stanze
+- 🧤 **Handschuh-Modus** mit großen Knöpfen
+- 📷 **Laufkarte abfotografieren** – Werte werden ausgelesen
+- 🎬 **Gesamtablauf** Stanze → Corrpal → Palette mit Zeitplan
+- ⚠️ Störungen mit **Meldungs-Nr. und Schaltplan**
+- 🎯 **Quiz** getrennt für Stanze und Palettierer
+- 📤 **Rüstblatt an Kollegen** schicken (Datei, QR, Text)
+
 ## APK
 Jeder Push baut automatisch eine neue APK → **Releases** → `Fox-Stanze.apk`.
